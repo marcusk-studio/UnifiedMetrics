@@ -39,6 +39,7 @@ tasks {
         relocate("com.influxdb", "dev.cubxity.plugins.metrics.libs.com.influxdb")
         relocate("okhttp", "dev.cubxity.plugins.metrics.libs.okhttp")
         relocate("okio", "dev.cubxity.plugins.metrics.libs.okio")
+        relocate("com.datadoghq", "dev.cubxity.plugins.metrics.libs.com.datadoghq")
         relocate("io.prometheus", "dev.cubxity.plugins.metrics.libs.io.prometheus")
     }
     compileKotlin {
