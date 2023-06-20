@@ -69,19 +69,19 @@ class DogStatsDConfigMetricsDriver(private val api: UnifiedMetrics, private val 
         metrics.fastForEach { metric ->
             val intMutableList: MutableList<String> = mutableListOf<String>()
             for (entry in metric.labels.entries) {
-                intMutableList.add(entry.key);
-                intMutableList.add(entry.value);
+                intMutableList.add(entry.key + ":" + entry.value);
             }
             addDataDogInternalTags(intMutableList)
             when (metric) {
-                is GaugeMetric -> statsdClient?.gauge(metric.name, metric.value, *intMutableList.toTypedArray())
-                is CounterMetric -> statsdClient?.count(metric.name, metric.value, *intMutableList.toTypedArray())
+                is GaugeMetric -> {
+                    statsdClient?.gauge(metric.name, metric.value, *intMutableList.toTypedArray())
+                }
+                is CounterMetric -> {
+                    statsdClient?.count(metric.name, metric.value, *intMutableList.toTypedArray())
+                }
                 is HistogramMetric -> {
                     metric.bucket.fastForEach { bucket ->
-                        var temp = bucket.cumulativeCount
-                        while (temp-- > 0) {
-                            statsdClient?.histogram(metric.name, bucket.upperBound, *intMutableList.toTypedArray())
-                        }
+                        statsdClient?.distribution(metric.name, bucket.upperBound, bucket.cumulativeCount, *intMutableList.toTypedArray())
                     }
                 }
             }
@@ -96,8 +96,7 @@ class DogStatsDConfigMetricsDriver(private val api: UnifiedMetrics, private val 
             if (tagPart.size < 2) {
                 continue
             }
-            intMutableList.add(tagPart[0])
-            intMutableList.add(tagPart[1])
+            intMutableList.add(tag)
         }
     }
 }
