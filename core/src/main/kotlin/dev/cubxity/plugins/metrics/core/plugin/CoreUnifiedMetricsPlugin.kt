@@ -20,14 +20,14 @@ package dev.cubxity.plugins.metrics.core.plugin
 import dev.cubxity.plugins.metrics.common.plugin.AbstractUnifiedMetricsPlugin
 import dev.cubxity.plugins.metrics.influx.InfluxMetricsDriverFactory
 import dev.cubxity.plugins.metrics.prometheus.PrometheusMetricsDriverFactory
-import dev.cubxity.plugins.metrics.datadog.DataDogMetricsDriverFactory
+import dev.cubxity.plugins.metrics.dogstatsd.DogStatsDMetricsDriverFactory
 
 abstract class CoreUnifiedMetricsPlugin : AbstractUnifiedMetricsPlugin() {
     override fun registerMetricsDrivers() {
         apiProvider.metricsManager.apply {
             registerDriver("influx", InfluxMetricsDriverFactory)
             registerDriver("prometheus", PrometheusMetricsDriverFactory)
-            registerDriver("datadog", DataDogMetricsDriverFactory)
+            registerDriver("dogstatsd", DogStatsDMetricsDriverFactory)
         }
     }
 }

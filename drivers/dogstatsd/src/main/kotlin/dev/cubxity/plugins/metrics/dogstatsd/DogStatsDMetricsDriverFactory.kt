@@ -15,11 +15,19 @@
  *     along with UnifiedMetrics.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package dev.cubxity.plugins.metrics.datadog
+package dev.cubxity.plugins.metrics.dogstatsd
 
-import kotlinx.serialization.Serializable
+import dev.cubxity.plugins.metrics.api.UnifiedMetrics
+import dev.cubxity.plugins.metrics.api.metric.MetricsDriver
+import dev.cubxity.plugins.metrics.api.metric.MetricsDriverFactory
+import kotlinx.serialization.KSerializer
 
-@Serializable
-data class DataDogConfig (
-        val output: String = "temp",
-)
+object DogStatsDMetricsDriverFactory : MetricsDriverFactory<DogStatsDConfig> {
+    override val configSerializer: KSerializer<DogStatsDConfig>
+        get() = DogStatsDConfig.serializer()
+
+    override val defaultConfig: DogStatsDConfig
+        get() = DogStatsDConfig("")
+
+    override fun createDriver(api: UnifiedMetrics, config: DogStatsDConfig): MetricsDriver = DogStatsDConfigMetricsDriver(api, config)
+}

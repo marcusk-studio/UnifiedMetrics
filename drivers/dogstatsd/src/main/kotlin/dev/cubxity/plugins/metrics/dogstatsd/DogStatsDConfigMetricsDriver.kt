@@ -15,7 +15,7 @@
  *     along with UnifiedMetrics.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package dev.cubxity.plugins.metrics.datadog
+package dev.cubxity.plugins.metrics.dogstatsd
 
 import dev.cubxity.plugins.metrics.api.UnifiedMetrics
 import dev.cubxity.plugins.metrics.api.metric.MetricsDriver
@@ -31,13 +31,14 @@ import com.timgroup.statsd.NonBlockingStatsDClientBuilder;
 import com.timgroup.statsd.StatsDClient;
 import java.util.*
 
-class DataDogMetricsDriver(private val api: UnifiedMetrics, private val config: DataDogConfig) : MetricsDriver {
+class DogStatsDConfigMetricsDriver(private val api: UnifiedMetrics, private val config: DogStatsDConfig) : MetricsDriver {
     private val coroutineScope = CoroutineScope(Dispatchers.Default) + SupervisorJob()
 
     private var statsdClient: StatsDClient? = null
 
     override fun initialize() {
         statsdClient = NonBlockingStatsDClientBuilder().prefix("statsd").build()
+        scheduleTasks()
     }
 
     override fun close() {
@@ -71,6 +72,7 @@ class DataDogMetricsDriver(private val api: UnifiedMetrics, private val config: 
                 intMutableList.add(entry.key);
                 intMutableList.add(entry.value);
             }
+            addDataDogInternalTags(intMutableList)
             when (metric) {
                 is GaugeMetric -> statsdClient?.gauge(metric.name, metric.value, *intMutableList.toTypedArray())
                 is CounterMetric -> statsdClient?.count(metric.name, metric.value, *intMutableList.toTypedArray())
@@ -83,6 +85,19 @@ class DataDogMetricsDriver(private val api: UnifiedMetrics, private val config: 
                     }
                 }
             }
+        }
+    }
+
+    private fun addDataDogInternalTags(intMutableList: MutableList<String>) {
+        val tagDetails: String = System.getenv("DD_DOGSTATSD_TAGS");
+        val tagArray: List<String> = tagDetails.split("\\s+".toRegex())
+        for (tag in tagArray) {
+            val tagPart: List<String> = tag.split(":")
+            if (tagPart.size < 2) {
+                continue
+            }
+            intMutableList.add(tagPart[0])
+            intMutableList.add(tagPart[1])
         }
     }
 }
