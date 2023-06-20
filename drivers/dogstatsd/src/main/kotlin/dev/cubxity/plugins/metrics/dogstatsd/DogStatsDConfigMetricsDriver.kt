@@ -37,7 +37,8 @@ class DogStatsDConfigMetricsDriver(private val api: UnifiedMetrics, private val 
     private var statsdClient: StatsDClient? = null
 
     override fun initialize() {
-        statsdClient = NonBlockingStatsDClientBuilder().prefix("statsd").build()
+	    val host: String = System.getenv("DD_DOGSTATSD_HOST");
+        statsdClient = NonBlockingStatsDClientBuilder().prefix("statsd").hostname(host).build()
         scheduleTasks()
     }
 
