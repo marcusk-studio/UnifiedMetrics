@@ -28,7 +28,7 @@ repositories {
 dependencies {
     api(project(":unifiedmetrics-core"))
 //    compileOnly("com.destroystokyo.paper", "paper-api", "1.16.5-R0.1-SNAPSHOT")
-    paperweight.devBundle("dev.folia", "1.20.2-R0.1-SNAPSHOT")
+    paperweight.devBundle("dev.folia", "1.20.4-R0.1-SNAPSHOT")
 }
 
 tasks {

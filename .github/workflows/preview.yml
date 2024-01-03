@@ -16,6 +16,10 @@ jobs:
           cache: "gradle"
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
+      - name: Add paperweight dev bundle to local maven repo
+        run: |
+          mvn install:install-file -Dfile=folia-api-1.20.4-R0.1-SNAPSHOT.jar -DgroupId=dev.folia -DartifactId=folia-api -Dversion=1.20.4-R0.1-SNAPSHOT -Dpackaging=jar
+          mvn install:install-file -Dfile=paperweight-development-bundle-1.20.4-R0.1-SNAPSHOT.zip -DgroupId=dev.folia -DartifactId=dev-bundle -Dversion=1.20.4-R0.1-SNAPSHOT -Dpackaging=zip
       - name: Build with Gradle
         run: ./gradlew build --no-daemon
       - name: Set variables
