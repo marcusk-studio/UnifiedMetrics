@@ -17,6 +17,8 @@
 
 package dev.cubxity.plugins.metrics.common.metric.system.gc
 
+import dev.cubxity.plugins.metrics.api.UnifiedMetrics
+import dev.cubxity.plugins.metrics.api.metric.DistributionSink
 import dev.cubxity.plugins.metrics.api.metric.collector.CollectorCollection
 import dev.cubxity.plugins.metrics.api.metric.collector.Histogram
 import dev.cubxity.plugins.metrics.api.util.fastForEach
@@ -37,7 +39,7 @@ private val byteBuckets = doubleArrayOf(
     5_000_000_000.0, // 5 GB
 )
 
-class GCCollection : CollectorCollection {
+class GCCollection(private val api: UnifiedMetrics) : CollectorCollection {
     private val monitors = WeakHashMap<GarbageCollectorMXBean, GCMonitor>()
 
     override val collectors = ArrayList<Histogram>()
@@ -46,11 +48,12 @@ class GCCollection : CollectorCollection {
         get() = true
 
     override fun initialize() {
+        val distributionSink = api.metricsManager.driver as? DistributionSink
         ManagementFactory.getGarbageCollectorMXBeans().fastForEach { bean ->
             if (bean is NotificationEmitter) {
                 val labels = mapOf("gc" to bean.name)
-                val durationHistogram = Histogram("jvm_gc_duration_seconds", labels)
-                val freedHistogram = Histogram("jvm_gc_freed_bytes", labels, byteBuckets)
+                val durationHistogram = Histogram("jvm_gc_duration_seconds", labels, distributionSink = distributionSink)
+                val freedHistogram = Histogram("jvm_gc_freed_bytes", labels, byteBuckets, distributionSink = distributionSink)
 
                 collectors += durationHistogram
                 collectors += freedHistogram

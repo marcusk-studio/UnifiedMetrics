@@ -17,29 +17,22 @@
 
 package dev.cubxity.plugins.metrics.api.metric
 
-import dev.cubxity.plugins.metrics.api.metric.collector.CollectorCollection
-import dev.cubxity.plugins.metrics.api.metric.data.Metric
+import dev.cubxity.plugins.metrics.api.metric.data.Labels
 
-interface MetricsManager {
-    val collections: List<CollectorCollection>
-
+/**
+ * Optional interface that drivers can implement to receive raw distribution values
+ * directly instead of (or in addition to) aggregated histogram buckets.
+ *
+ * This is useful for systems like DogStatsD that compute percentiles server-side
+ * from raw samples, rather than consuming pre-bucketed histograms.
+ */
+interface DistributionSink {
     /**
-     * Get the current metrics driver. Returns null if no driver is initialized.
+     * Records a single observed value for a distribution metric.
+     *
+     * @param name The metric name (e.g., "minecraft_tick_duration_seconds")
+     * @param value The observed value
+     * @param labels Optional labels for this metric
      */
-    val driver: MetricsDriver?
-
-    fun initialize()
-
-    fun registerCollection(collection: CollectorCollection)
-
-    fun unregisterCollection(collection: CollectorCollection)
-
-    fun registerDriver(name: String, factory: MetricsDriverFactory<out Any>)
-
-    /**
-     * This should be called asynchronously
-     */
-    suspend fun collect(): List<Metric>
-
-    fun dispose()
+    fun recordDistribution(name: String, value: Double, labels: Labels = emptyMap())
 }
