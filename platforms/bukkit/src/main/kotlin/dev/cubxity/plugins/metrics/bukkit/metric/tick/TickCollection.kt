@@ -27,7 +27,7 @@ import dev.cubxity.plugins.metrics.bukkit.bootstrap.UnifiedMetricsBukkitBootstra
 import dev.cubxity.plugins.metrics.bukkit.util.BukkitPlatform
 import dev.cubxity.plugins.metrics.common.metric.Metrics
 
-class TickCollection(bootstrap: UnifiedMetricsBukkitBootstrap) : CollectorCollection {
+class TickCollection(bootstrap: UnifiedMetricsBukkitBootstrap, distributionSink: DistributionSink? = null) : CollectorCollection {
     private val reporter = when (BukkitPlatform.current) {
         BukkitPlatform.Folia, BukkitPlatform.Paper -> PaperTickReporter(this, bootstrap)
         else -> BukkitTickReporter(this, bootstrap)
@@ -38,7 +38,7 @@ class TickCollection(bootstrap: UnifiedMetricsBukkitBootstrap) : CollectorCollec
         Metrics.Server.TickDurationSeconds,
         sumStoreFactory = VolatileDoubleStore,
         countStoreFactory = VolatileLongStore,
-        distributionSink = bootstrap.api.metricsManager.driver as? DistributionSink
+        distributionSink = distributionSink
     )
 
     override val collectors: List<Collector> = listOf(tickDuration)

@@ -18,6 +18,7 @@
 package dev.cubxity.plugins.metrics.bukkit
 
 import dev.cubxity.plugins.metrics.api.UnifiedMetrics
+import dev.cubxity.plugins.metrics.api.metric.DistributionSink
 import dev.cubxity.plugins.metrics.bukkit.bootstrap.UnifiedMetricsBukkitBootstrap
 import dev.cubxity.plugins.metrics.bukkit.metric.events.EventsCollection
 import dev.cubxity.plugins.metrics.bukkit.metric.regionized.FoliaRegionCollection
@@ -50,7 +51,7 @@ class UnifiedMetricsBukkitPlugin(
             with(config.metrics.collectors) {
                 if (server) registerCollection(ServerCollection(bootstrap))
                 if (world) registerCollection(WorldCollection(bootstrap))
-                if (tick) registerCollection(TickCollection(bootstrap))
+                if (tick) registerCollection(TickCollection(bootstrap, driver as? DistributionSink))
                 if (events) registerCollection(EventsCollection(bootstrap))
 
                 if (regionizedServer && BukkitPlatform.current == BukkitPlatform.Folia) {
