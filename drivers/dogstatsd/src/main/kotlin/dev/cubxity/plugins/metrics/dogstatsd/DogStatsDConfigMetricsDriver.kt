@@ -18,10 +18,12 @@
 package dev.cubxity.plugins.metrics.dogstatsd
 
 import dev.cubxity.plugins.metrics.api.UnifiedMetrics
+import dev.cubxity.plugins.metrics.api.metric.DistributionSink
 import dev.cubxity.plugins.metrics.api.metric.MetricsDriver
 import dev.cubxity.plugins.metrics.api.metric.data.CounterMetric
 import dev.cubxity.plugins.metrics.api.metric.data.GaugeMetric
 import dev.cubxity.plugins.metrics.api.metric.data.HistogramMetric
+import dev.cubxity.plugins.metrics.api.metric.data.Labels
 import dev.cubxity.plugins.metrics.api.metric.data.Metric
 import dev.cubxity.plugins.metrics.api.util.fastForEach
 import kotlinx.coroutines.*
@@ -31,7 +33,7 @@ import com.timgroup.statsd.NonBlockingStatsDClientBuilder;
 import com.timgroup.statsd.StatsDClient;
 import java.util.*
 
-class DogStatsDConfigMetricsDriver(private val api: UnifiedMetrics, private val config: DogStatsDConfig) : MetricsDriver {
+class DogStatsDConfigMetricsDriver(private val api: UnifiedMetrics, private val config: DogStatsDConfig) : MetricsDriver, DistributionSink {
     private val coroutineScope = CoroutineScope(Dispatchers.Default) + SupervisorJob()
 
     private var statsdClient: StatsDClient? = null
@@ -46,6 +48,15 @@ class DogStatsDConfigMetricsDriver(private val api: UnifiedMetrics, private val 
         coroutineScope.cancel()
         statsdClient?.close()
         statsdClient = null
+    }
+
+    override fun recordDistribution(name: String, value: Double, labels: Labels) {
+        val tags = mutableListOf<String>()
+        for (entry in labels.entries) {
+            tags.add("${entry.key}:${entry.value}")
+        }
+        addDataDogInternalTags(tags)
+        statsdClient?.distribution(name, value, *tags.toTypedArray())
     }
 
     private fun scheduleTasks() {
@@ -81,9 +92,10 @@ class DogStatsDConfigMetricsDriver(private val api: UnifiedMetrics, private val 
                     statsdClient?.count(metric.name, metric.value, *intMutableList.toTypedArray())
                 }
                 is HistogramMetric -> {
-                    metric.bucket.fastForEach { bucket ->
-                        statsdClient?.distribution(metric.name, bucket.upperBound, bucket.cumulativeCount, *intMutableList.toTypedArray())
-                    }
+                    // For histograms, send only the aggregate statistics (sum and count) as gauges
+                    // The individual distribution values are sent via recordDistribution() when observed
+                    statsdClient?.gauge("${metric.name}.sum", metric.sampleSum, *intMutableList.toTypedArray())
+                    statsdClient?.gauge("${metric.name}.count", metric.sampleCount, *intMutableList.toTypedArray())
                 }
             }
         }

@@ -17,6 +17,7 @@
 
 package dev.cubxity.plugins.metrics.api.metric.collector
 
+import dev.cubxity.plugins.metrics.api.metric.DistributionSink
 import dev.cubxity.plugins.metrics.api.metric.data.Bucket
 import dev.cubxity.plugins.metrics.api.metric.data.HistogramMetric
 import dev.cubxity.plugins.metrics.api.metric.data.Labels
@@ -49,13 +50,19 @@ private val defaultBuckets = doubleArrayOf(
 
 /**
  * @param name name of the sample.
+ * @param labels labels for the histogram.
+ * @param upperBounds the upper bounds for the histogram buckets.
+ * @param sumStoreFactory factory for creating the sum store.
+ * @param countStoreFactory factory for creating the count store.
+ * @param distributionSink optional sink to receive individual observed values for systems that compute percentiles server-side.
  */
 class Histogram(
     private val name: String,
     private val labels: Labels = emptyMap(),
     upperBounds: DoubleArray = defaultBuckets,
     sumStoreFactory: DoubleStoreFactory = DoubleAdderStore,
-    countStoreFactory: LongStoreFactory = LongAdderStore
+    countStoreFactory: LongStoreFactory = LongAdderStore,
+    private val distributionSink: DistributionSink? = null
 ) : Collector {
     private val upperBounds = upperBounds + Double.POSITIVE_INFINITY
 
@@ -92,6 +99,9 @@ class Histogram(
             }
         }
         sum.add(value)
+
+        // If a distribution sink is configured, send the raw value directly
+        distributionSink?.recordDistribution(name, value, labels)
     }
 
     operator fun plusAssign(value: Number) {

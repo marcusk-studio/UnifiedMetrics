@@ -17,6 +17,7 @@
 
 package dev.cubxity.plugins.metrics.bukkit.metric.tick
 
+import dev.cubxity.plugins.metrics.api.metric.DistributionSink
 import dev.cubxity.plugins.metrics.api.metric.collector.Collector
 import dev.cubxity.plugins.metrics.api.metric.collector.CollectorCollection
 import dev.cubxity.plugins.metrics.api.metric.collector.Histogram
@@ -36,7 +37,8 @@ class TickCollection(bootstrap: UnifiedMetricsBukkitBootstrap) : CollectorCollec
     private val tickDuration = Histogram(
         Metrics.Server.TickDurationSeconds,
         sumStoreFactory = VolatileDoubleStore,
-        countStoreFactory = VolatileLongStore
+        countStoreFactory = VolatileLongStore,
+        distributionSink = bootstrap.api.metricsManager.driver as? DistributionSink
     )
 
     override val collectors: List<Collector> = listOf(tickDuration)
