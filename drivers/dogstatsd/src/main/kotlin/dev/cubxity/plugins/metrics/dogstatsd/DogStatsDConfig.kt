@@ -22,4 +22,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class DogStatsDConfig (
         val output: String = "temp",
+        val host: String = "localhost",
 )

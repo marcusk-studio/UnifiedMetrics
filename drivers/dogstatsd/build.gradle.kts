@@ -20,4 +20,12 @@ apply(plugin = "kotlinx-serialization")
 dependencies {
     compileOnly(project(":unifiedmetrics-api"))
     implementation ("com.datadoghq","java-dogstatsd-client","4.2.0")
+
+    testImplementation(project(":unifiedmetrics-api"))
+    testImplementation(kotlin("test"))
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+}
+
+tasks.test {
+    useJUnitPlatform()
 }

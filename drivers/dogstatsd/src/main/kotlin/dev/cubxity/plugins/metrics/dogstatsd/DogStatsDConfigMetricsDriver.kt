@@ -31,6 +31,8 @@ import kotlin.math.max
 import kotlin.system.measureTimeMillis
 import com.timgroup.statsd.NonBlockingStatsDClientBuilder;
 import com.timgroup.statsd.StatsDClient;
+import jnr.unixsocket.UnixSocketAddress
+import java.io.File
 import java.util.*
 
 class DogStatsDConfigMetricsDriver(private val api: UnifiedMetrics, private val config: DogStatsDConfig) : MetricsDriver, DistributionSink {
@@ -39,8 +41,26 @@ class DogStatsDConfigMetricsDriver(private val api: UnifiedMetrics, private val 
     private var statsdClient: StatsDClient? = null
 
     override fun initialize() {
-	    val host: String = System.getenv("DD_DOGSTATSD_HOST");
-        statsdClient = NonBlockingStatsDClientBuilder().prefix("statsd").hostname(host).build()
+        val builder = NonBlockingStatsDClientBuilder()
+
+        val url = System.getenv("DD_DOGSTATSD_URL")
+        val host = System.getenv("DD_DOGSTATSD_HOST")
+
+        when {
+            url != null && url.startsWith("unix://") -> {
+                val socketPath = url.removePrefix("unix://")
+                builder.addressLookup { UnixSocketAddress(File(socketPath)) }
+            }
+            host != null -> builder.hostname(host)
+            else -> builder.hostname(config.host)
+        }
+
+        val entityId = System.getenv("DD_ENTITY_ID")
+        if (entityId != null) {
+            builder.entityID(entityId)
+        }
+
+        statsdClient = builder.build()
         scheduleTasks()
     }
 
@@ -89,7 +109,11 @@ class DogStatsDConfigMetricsDriver(private val api: UnifiedMetrics, private val 
                     statsdClient?.gauge(metric.name, metric.value, *intMutableList.toTypedArray())
                 }
                 is CounterMetric -> {
-                    statsdClient?.count(metric.name, metric.value, *intMutableList.toTypedArray())
+                    // Counters in UnifiedMetrics are cumulative totals (e.g. total threads started),
+                    // not deltas. Use gauge (|g|) to report the absolute value; Datadog can derive
+                    // rate() from it. Using count (|c|) would treat the cumulative total as
+                    // an increment, inflating the value on every flush.
+                    statsdClient?.gauge(metric.name, metric.value, *intMutableList.toTypedArray())
                 }
                 is HistogramMetric -> {
                     // For histograms, send only the aggregate statistics (sum and count) as gauges
@@ -102,14 +126,11 @@ class DogStatsDConfigMetricsDriver(private val api: UnifiedMetrics, private val 
     }
 
     private fun addDataDogInternalTags(intMutableList: MutableList<String>) {
-        val tagDetails: String = System.getenv("DD_DOGSTATSD_TAGS");
-        val tagArray: List<String> = tagDetails.split("\\s+".toRegex())
-        for (tag in tagArray) {
-            val tagPart: List<String> = tag.split(":")
-            if (tagPart.size < 2) {
-                continue
+        val tagDetails: String = System.getenv("DD_DOGSTATSD_TAGS") ?: return
+        for (tag in tagDetails.split("\\s+".toRegex())) {
+            if (tag.contains(":")) {
+                intMutableList.add(tag)
             }
-            intMutableList.add(tag)
         }
     }
 }
