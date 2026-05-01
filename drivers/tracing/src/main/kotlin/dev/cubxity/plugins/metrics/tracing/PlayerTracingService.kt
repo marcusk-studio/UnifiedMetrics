@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentHashMap
  */
 object PlayerTracingService {
     /**
-     * The active OTel tracer.  Null when tracing is disabled or not yet initialised.
+     * The active OTel tracer.  Null when tracing is disabled or not yet initialized.
      */
     @Volatile
     var tracer: io.opentelemetry.api.trace.Tracer? = null
