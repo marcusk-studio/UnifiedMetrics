@@ -15,10 +15,20 @@
  *     along with UnifiedMetrics.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-dependencies {
-    api(project(":unifiedmetrics-common"))
-    implementation(project(":unifiedmetrics-driver-influx"))
-    implementation(project(":unifiedmetrics-driver-prometheus"))
-    implementation(project(":unifiedmetrics-driver-dogstatsd"))
-    api(project(":unifiedmetrics-driver-tracing"))
-}
+package dev.cubxity.plugins.metrics.tracing
+
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class TracingConfig(
+    /**
+     * OTLP gRPC endpoint URL (e.g. "http://localhost:4317").
+     * Overridden by the OTEL_EXPORTER_OTLP_ENDPOINT environment variable when set.
+     */
+    val endpoint: String = System.getenv("OTEL_EXPORTER_OTLP_ENDPOINT") ?: "http://localhost:4317",
+
+    /**
+     * Exporter type: "otlp" (default) or "none" (disables exporting).
+     */
+    val exporter: String = "otlp"
+)

@@ -15,10 +15,13 @@
  *     along with UnifiedMetrics.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+apply(plugin = "kotlinx-serialization")
+
+val otelVersion = "1.40.0"
+
 dependencies {
-    api(project(":unifiedmetrics-common"))
-    implementation(project(":unifiedmetrics-driver-influx"))
-    implementation(project(":unifiedmetrics-driver-prometheus"))
-    implementation(project(":unifiedmetrics-driver-dogstatsd"))
-    api(project(":unifiedmetrics-driver-tracing"))
+    compileOnly(project(":unifiedmetrics-api"))
+
+    implementation("io.opentelemetry:opentelemetry-sdk:$otelVersion")
+    implementation("io.opentelemetry:opentelemetry-exporter-otlp:$otelVersion")
 }

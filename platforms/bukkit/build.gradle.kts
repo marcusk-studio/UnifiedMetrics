@@ -44,6 +44,8 @@ tasks {
         relocate("okio", "dev.cubxity.plugins.metrics.libs.okio")
         relocate("com.datadoghq", "dev.cubxity.plugins.metrics.libs.com.datadoghq")
         relocate("io.prometheus", "dev.cubxity.plugins.metrics.libs.io.prometheus")
+        relocate("io.opentelemetry", "dev.cubxity.plugins.metrics.libs.io.opentelemetry")
+        relocate("io.grpc", "dev.cubxity.plugins.metrics.libs.io.grpc")
     }
     processResources {
         filesMatching("plugin.yml") {

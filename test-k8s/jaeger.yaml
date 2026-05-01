@@ -1,0 +1,101 @@
+# Jaeger all-in-one deployment for APM trace collection and UI.
+# Access the Jaeger UI at http://<node-ip>:16686 after deploying.
+#
+# Deploy with:
+#   kubectl apply -f test-k8s/jaeger.yaml
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tracing-test
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaeger
+  namespace: tracing-test
+  labels:
+    app: jaeger
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jaeger
+  template:
+    metadata:
+      labels:
+        app: jaeger
+    spec:
+      containers:
+        - name: jaeger
+          image: jaegertracing/all-in-one:1.58
+          env:
+            - name: COLLECTOR_OTLP_ENABLED
+              value: "true"
+            - name: MEMORY_MAX_TRACES
+              value: "50000"
+          ports:
+            # Jaeger UI
+            - containerPort: 16686
+              name: ui
+              protocol: TCP
+            # OTLP gRPC (receives spans from UnifiedMetrics)
+            - containerPort: 4317
+              name: otlp-grpc
+              protocol: TCP
+            # OTLP HTTP
+            - containerPort: 4318
+              name: otlp-http
+              protocol: TCP
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger
+  namespace: tracing-test
+spec:
+  selector:
+    app: jaeger
+  ports:
+    - name: ui
+      port: 16686
+      targetPort: 16686
+      protocol: TCP
+    - name: otlp-grpc
+      port: 4317
+      targetPort: 4317
+      protocol: TCP
+    - name: otlp-http
+      port: 4318
+      targetPort: 4318
+      protocol: TCP
+  type: ClusterIP
+---
+# NodePort service so the Jaeger UI is reachable from outside the cluster during testing.
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger-nodeport
+  namespace: tracing-test
+spec:
+  selector:
+    app: jaeger
+  ports:
+    - name: ui
+      port: 16686
+      targetPort: 16686
+      nodePort: 30686
+      protocol: TCP
+    - name: otlp-grpc
+      port: 4317
+      targetPort: 4317
+      nodePort: 30317
+      protocol: TCP
+  type: NodePort

@@ -15,10 +15,20 @@
  *     along with UnifiedMetrics.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-dependencies {
-    api(project(":unifiedmetrics-common"))
-    implementation(project(":unifiedmetrics-driver-influx"))
-    implementation(project(":unifiedmetrics-driver-prometheus"))
-    implementation(project(":unifiedmetrics-driver-dogstatsd"))
-    api(project(":unifiedmetrics-driver-tracing"))
+package dev.cubxity.plugins.metrics.tracing
+
+import dev.cubxity.plugins.metrics.api.UnifiedMetrics
+import dev.cubxity.plugins.metrics.api.metric.MetricsDriver
+import dev.cubxity.plugins.metrics.api.metric.MetricsDriverFactory
+import kotlinx.serialization.KSerializer
+
+object TracingDriverFactory : MetricsDriverFactory<TracingConfig> {
+    override val configSerializer: KSerializer<TracingConfig>
+        get() = TracingConfig.serializer()
+
+    override val defaultConfig: TracingConfig
+        get() = TracingConfig()
+
+    override fun createDriver(api: UnifiedMetrics, config: TracingConfig): MetricsDriver =
+        TracingDriver(api, config)
 }

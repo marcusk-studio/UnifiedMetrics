@@ -15,6 +15,23 @@
  *     along with UnifiedMetrics.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/*
+ *     This file is part of UnifiedMetrics.
+ *
+ *     UnifiedMetrics is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU Lesser General Public License as published by
+ *     the Free Software Foundation, either version 3 of the License, or
+ *     (at your option) any later version.
+ *
+ *     UnifiedMetrics is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU Lesser General Public License for more details.
+ *
+ *     You should have received a copy of the GNU Lesser General Public License
+ *     along with UnifiedMetrics.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package dev.cubxity.plugins.metrics.bukkit
 
 import dev.cubxity.plugins.metrics.api.UnifiedMetrics
@@ -24,6 +41,7 @@ import dev.cubxity.plugins.metrics.bukkit.metric.events.EventsCollection
 import dev.cubxity.plugins.metrics.bukkit.metric.regionized.FoliaRegionCollection
 import dev.cubxity.plugins.metrics.bukkit.metric.server.ServerCollection
 import dev.cubxity.plugins.metrics.bukkit.metric.tick.TickCollection
+import dev.cubxity.plugins.metrics.bukkit.metric.tracing.BukkitTracingCollection
 import dev.cubxity.plugins.metrics.bukkit.metric.world.WorldCollection
 import dev.cubxity.plugins.metrics.bukkit.util.BukkitPlatform
 import dev.cubxity.plugins.metrics.core.plugin.CoreUnifiedMetricsPlugin
@@ -34,6 +52,7 @@ class UnifiedMetricsBukkitPlugin(
         override val bootstrap: UnifiedMetricsBukkitBootstrap
 ) : CoreUnifiedMetricsPlugin() {
     private val executor = Executors.newScheduledThreadPool(1)
+    private var tracingCollection: BukkitTracingCollection? = null
 
     override fun disable() {
         executor.shutdownNow()
@@ -59,5 +78,18 @@ class UnifiedMetricsBukkitPlugin(
                 }
             }
         }
+    }
+
+    override fun registerPlatformTracing() {
+        val collection = BukkitTracingCollection(bootstrap)
+        collection.initialize()
+        tracingCollection = collection
+    }
+
+    override fun disposePlatformTracing() {
+        tracingCollection?.dispose()
+        tracingCollection = null
+        // Shut down the OTel SDK (flushes exporters, ends leaked spans).
+        super.disposePlatformTracing()
     }
 }

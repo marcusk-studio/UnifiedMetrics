@@ -15,6 +15,23 @@
  *     along with UnifiedMetrics.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/*
+ *     This file is part of UnifiedMetrics.
+ *
+ *     UnifiedMetrics is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU Lesser General Public License as published by
+ *     the Free Software Foundation, either version 3 of the License, or
+ *     (at your option) any later version.
+ *
+ *     UnifiedMetrics is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU Lesser General Public License for more details.
+ *
+ *     You should have received a copy of the GNU Lesser General Public License
+ *     along with UnifiedMetrics.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 plugins {
     id("com.github.johnrengelman.shadow")
 }
@@ -26,7 +43,7 @@ repositories {
 dependencies {
     api(project(":unifiedmetrics-core"))
 
-    compileOnly("com.velocitypowered:velocity-api:3.1.1")
+    compileOnly("com.velocitypowered:velocity-api:3.5.0-SNAPSHOT")
 }
 
 tasks {
@@ -39,6 +56,8 @@ tasks {
         relocate("okio", "dev.cubxity.plugins.metrics.libs.okio")
         relocate("com.datadoghq", "dev.cubxity.plugins.metrics.libs.com.datadoghq")
         relocate("io.prometheus", "dev.cubxity.plugins.metrics.libs.io.prometheus")
+        relocate("io.opentelemetry", "dev.cubxity.plugins.metrics.libs.io.opentelemetry")
+        relocate("io.grpc", "dev.cubxity.plugins.metrics.libs.io.grpc")
     }
     processResources {
         filesMatching("velocity-plugin.yml") {
@@ -48,3 +67,4 @@ tasks {
         }
     }
 }
+

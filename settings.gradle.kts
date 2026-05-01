@@ -31,6 +31,7 @@ include(modulePrefix + platformPrefix + "velocity")
 include(modulePrefix + driverPrefix + "influx")
 include(modulePrefix + driverPrefix + "prometheus")
 include(modulePrefix + driverPrefix + "dogstatsd")
+include(modulePrefix + driverPrefix + "tracing")
 
 project(modulePrefix + "api").projectDir = File(rootDir, "api")
 project(modulePrefix + "common").projectDir = File(rootDir, "common")
@@ -44,6 +45,7 @@ val driversDir = File(rootDir, "drivers")
 project(modulePrefix + driverPrefix + "influx").projectDir = File(driversDir, "influx")
 project(modulePrefix + driverPrefix + "prometheus").projectDir = File(driversDir, "prometheus")
 project(modulePrefix + driverPrefix + "dogstatsd").projectDir = File(driversDir, "dogstatsd")
+project(modulePrefix + driverPrefix + "tracing").projectDir = File(driversDir, "tracing")
 
 pluginManagement {
     repositories {

@@ -22,7 +22,8 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class UnifiedMetricsConfig(
     val server: UnifiedMetricsServerConfig = UnifiedMetricsServerConfig(),
-    val metrics: UnifiedMetricsMetricsConfig = UnifiedMetricsMetricsConfig()
+    val metrics: UnifiedMetricsMetricsConfig = UnifiedMetricsMetricsConfig(),
+    val tracing: UnifiedMetricsTracingConfig = UnifiedMetricsTracingConfig()
 )
 
 @Serializable
@@ -48,6 +49,20 @@ data class UnifiedMetricsCollectorsConfig(
     val tick: Boolean = true,
     val events: Boolean = true,
     val regionizedServer: Boolean = true
+)
+
+@Serializable
+data class UnifiedMetricsTracingConfig(
+    /**
+     * Whether APM tracing of player connections is enabled.
+     * Defaults to true — traces are sent to [endpoint] via OTLP gRPC.
+     */
+    val enabled: Boolean = true,
+    /**
+     * OTLP gRPC endpoint for the trace exporter.
+     * Overridden at runtime by the OTEL_EXPORTER_OTLP_ENDPOINT environment variable.
+     */
+    val endpoint: String = "http://localhost:4317"
 )
 
 private fun env(name: String, default: String): String =

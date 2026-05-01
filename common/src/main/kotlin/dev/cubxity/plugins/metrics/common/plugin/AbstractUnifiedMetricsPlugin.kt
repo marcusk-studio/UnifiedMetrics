@@ -64,9 +64,18 @@ abstract class AbstractUnifiedMetricsPlugin : UnifiedMetricsPlugin {
             registerPlatformMetrics()
             apiProvider.metricsManager.initialize()
         }
+
+        if (config.tracing.enabled) {
+            registerTracingDriver()
+            registerPlatformTracing()
+        }
     }
 
     open fun disable() {
+        if (config.tracing.enabled) {
+            disposePlatformTracing()
+        }
+
         if (config.metrics.enabled) {
             apiProvider.metricsManager.dispose()
         }
@@ -91,6 +100,24 @@ abstract class AbstractUnifiedMetricsPlugin : UnifiedMetricsPlugin {
             }
         }
     }
+
+    /**
+     * Called when tracing is enabled. Subclasses (e.g. [CoreUnifiedMetricsPlugin]) register
+     * the tracing driver factory so the [MetricsManager] can initialise it.
+     */
+    open fun registerTracingDriver() {}
+
+    /**
+     * Called after [registerTracingDriver]. Platform-specific plugins register their
+     * tracing event collections here (e.g. [VelocityTracingCollection]).
+     */
+    open fun registerPlatformTracing() {}
+
+    /**
+     * Called during [disable] when tracing is enabled. Platform-specific plugins should
+     * dispose their tracing event collections here.
+     */
+    open fun disposePlatformTracing() {}
 
     private fun loadConfig(): UnifiedMetricsConfig {
         val file = bootstrap.configDirectory.toFile().resolve("config.yml")
