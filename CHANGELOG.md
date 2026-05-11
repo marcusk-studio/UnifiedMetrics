@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.4](https://github.com/marcusk-studio/UnifiedMetrics/compare/v0.4.3...v0.4.4) (2026-05-11)
+
+
+### Bug Fixes
+
+* **velocity:** defer trace context propagation to avoid currentServer race ([7f3732a](https://github.com/marcusk-studio/UnifiedMetrics/commit/7f3732a424ba8da8b1bf72f9d9ced2f09876a503))
+
 ## [0.4.3](https://github.com/marcusk-studio/UnifiedMetrics/compare/v0.4.2...v0.4.3) (2026-05-11)
 
 
