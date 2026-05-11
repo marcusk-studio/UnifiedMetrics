@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.2](https://github.com/marcusk-studio/UnifiedMetrics/compare/v0.4.1...v0.4.2) (2026-05-11)
+
+
+### Bug Fixes
+
+* **shadow:** exclude duplicate META-INF entries from fat jars ([9a2db05](https://github.com/marcusk-studio/UnifiedMetrics/commit/9a2db05f00d73048a812f510211f9ba56646d792))
+
 ## [0.4.1](https://github.com/marcusk-studio/UnifiedMetrics/compare/v0.4.0...v0.4.1) (2026-05-11)
 
 
