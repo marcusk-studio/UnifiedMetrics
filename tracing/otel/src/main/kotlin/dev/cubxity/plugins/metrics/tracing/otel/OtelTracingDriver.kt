@@ -120,7 +120,8 @@ class OtelTracingDriver(
             .build()
         this.sdk = sdk
 
-        api.logger.info("OTel tracing: built local SDK with OTLP exporter (endpoint='${config.endpoint.ifBlank { "<env default>" }}', protocol=${config.protocol}).")
+        val effectiveEndpoint = resolveEndpoint() ?: "localhost:4317"
+        api.logger.info("OTel tracing: built local SDK with OTLP exporter (endpoint='$effectiveEndpoint', protocol=${config.protocol}).")
         _tracer = TracerImpl(sdk, sdk.getTracer("dev.cubxity.unifiedmetrics"))
     }
 
@@ -156,18 +157,25 @@ class OtelTracingDriver(
         spanProcessor = null
     }
 
+    private fun resolveEndpoint(): String? {
+        if (config.endpoint.isNotBlank()) return config.endpoint
+        return System.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")?.takeIf { it.isNotBlank() }
+            ?: System.getenv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT")?.takeIf { it.isNotBlank() }
+    }
+
     private fun buildExporter(): SpanExporter {
         val protocol = config.protocol.lowercase()
+        val endpoint = resolveEndpoint()
         return when (protocol) {
             "http", "http/protobuf" -> {
                 val builder = OtlpHttpSpanExporter.builder()
-                if (config.endpoint.isNotBlank()) builder.setEndpoint(config.endpoint)
+                if (endpoint != null) builder.setEndpoint(endpoint)
                 config.headers.forEach { (k, v) -> builder.addHeader(k, v) }
                 builder.build()
             }
             else -> {
                 val builder = OtlpGrpcSpanExporter.builder()
-                if (config.endpoint.isNotBlank()) builder.setEndpoint(config.endpoint)
+                if (endpoint != null) builder.setEndpoint(endpoint)
                 config.headers.forEach { (k, v) -> builder.addHeader(k, v) }
                 builder.build()
             }
