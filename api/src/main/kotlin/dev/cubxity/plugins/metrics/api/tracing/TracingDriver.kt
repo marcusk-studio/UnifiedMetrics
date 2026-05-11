@@ -15,21 +15,12 @@
  *     along with UnifiedMetrics.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package dev.cubxity.plugins.metrics.fabric.mixins;
+package dev.cubxity.plugins.metrics.api.tracing
 
-import dev.cubxity.plugins.metrics.fabric.events.ChatEvent;
-import net.minecraft.server.network.ServerPlayNetworkHandler;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import java.io.Closeable
 
-@Mixin(ServerPlayNetworkHandler.class)
-public class ServerPlayNetworkHandlerMixin {
+interface TracingDriver : Closeable {
+    val tracer: Tracer
 
-    @Inject(method = "handleDecoratedMessage", at = @At("HEAD"))
-    private void onHandleMessage(CallbackInfo ci) {
-        ChatEvent.Companion.getEvent().invoker().onChat();
-    }
-
+    fun initialize()
 }

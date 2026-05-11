@@ -64,9 +64,20 @@ abstract class AbstractUnifiedMetricsPlugin : UnifiedMetricsPlugin {
             registerPlatformMetrics()
             apiProvider.metricsManager.initialize()
         }
+
+        if (config.tracing.enabled) {
+            registerTracingDrivers()
+            apiProvider.tracingManager.initialize()
+            registerPlatformTracing()
+        }
     }
 
     open fun disable() {
+        if (config.tracing.enabled) {
+            disposePlatformTracing()
+            apiProvider.tracingManager.dispose()
+        }
+
         if (config.metrics.enabled) {
             apiProvider.metricsManager.dispose()
         }
@@ -81,10 +92,22 @@ abstract class AbstractUnifiedMetricsPlugin : UnifiedMetricsPlugin {
 
     }
 
+    open fun registerTracingDrivers() {
+
+    }
+
+    open fun registerPlatformTracing() {
+
+    }
+
+    open fun disposePlatformTracing() {
+
+    }
+
     open fun registerPlatformMetrics() {
         apiProvider.metricsManager.apply {
             with(config.metrics.collectors) {
-                if (systemGc) registerCollection(GCCollection())
+                if (systemGc) registerCollection(GCCollection(apiProvider))
                 if (systemMemory) registerCollection(MemoryCollection())
                 if (systemProcess) registerCollection(ProcessCollection())
                 if (systemThread) registerCollection(ThreadCollection())

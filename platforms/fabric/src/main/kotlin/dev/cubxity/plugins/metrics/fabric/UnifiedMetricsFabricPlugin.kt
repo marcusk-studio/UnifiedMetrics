@@ -24,11 +24,12 @@ import dev.cubxity.plugins.metrics.fabric.metrics.events.EventsCollection
 import dev.cubxity.plugins.metrics.fabric.metrics.server.ServerCollection
 import dev.cubxity.plugins.metrics.fabric.metrics.tick.TickCollection
 import dev.cubxity.plugins.metrics.fabric.metrics.world.WorldCollection
-import java.util.concurrent.Executors
+import dev.cubxity.plugins.metrics.fabric.tracing.PlayerTracingListener
 
 class UnifiedMetricsFabricPlugin(
     override val bootstrap: UnifiedMetricsFabricBootstrap
 ): CoreUnifiedMetricsPlugin() {
+    private var tracingListener: PlayerTracingListener? = null
 
     override fun registerPlatformService(api: UnifiedMetrics) {
 
@@ -45,5 +46,16 @@ class UnifiedMetricsFabricPlugin(
                 if (events) registerCollection(EventsCollection())
             }
         }
+    }
+
+    override fun registerPlatformTracing() {
+        val listener = PlayerTracingListener(this)
+        listener.register()
+        tracingListener = listener
+    }
+
+    override fun disposePlatformTracing() {
+        tracingListener?.dispose()
+        tracingListener = null
     }
 }

@@ -15,21 +15,22 @@
  *     along with UnifiedMetrics.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package dev.cubxity.plugins.metrics.fabric.mixins;
+package dev.cubxity.plugins.metrics.api.tracing
 
-import dev.cubxity.plugins.metrics.fabric.events.ChatEvent;
-import net.minecraft.server.network.ServerPlayNetworkHandler;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+/**
+ * Opaque holder for a remote or local span context.
+ *
+ * Drivers are free to attach extra state via [extra]; the [headers] map is used
+ * for cross-process propagation (W3C `traceparent` / `tracestate`, etc.).
+ */
+interface SpanContext {
+    /**
+     * Propagation headers (e.g. `traceparent`, `tracestate`).
+     */
+    val headers: Map<String, String>
 
-@Mixin(ServerPlayNetworkHandler.class)
-public class ServerPlayNetworkHandlerMixin {
-
-    @Inject(method = "handleDecoratedMessage", at = @At("HEAD"))
-    private void onHandleMessage(CallbackInfo ci) {
-        ChatEvent.Companion.getEvent().invoker().onChat();
-    }
-
+    /**
+     * Driver-specific state. Opaque to callers.
+     */
+    val extra: Any?
 }

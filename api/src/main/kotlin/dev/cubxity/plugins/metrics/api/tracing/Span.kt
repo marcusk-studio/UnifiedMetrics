@@ -15,21 +15,29 @@
  *     along with UnifiedMetrics.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package dev.cubxity.plugins.metrics.fabric.mixins;
+package dev.cubxity.plugins.metrics.api.tracing
 
-import dev.cubxity.plugins.metrics.fabric.events.ChatEvent;
-import net.minecraft.server.network.ServerPlayNetworkHandler;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+interface Span {
+    /**
+     * The span's context, suitable for passing as a parent or for inter-process
+     * propagation via [Tracer.inject].
+     */
+    val context: SpanContext
 
-@Mixin(ServerPlayNetworkHandler.class)
-public class ServerPlayNetworkHandlerMixin {
+    fun setAttribute(key: String, value: String): Span
+    fun setAttribute(key: String, value: Long): Span
+    fun setAttribute(key: String, value: Double): Span
+    fun setAttribute(key: String, value: Boolean): Span
 
-    @Inject(method = "handleDecoratedMessage", at = @At("HEAD"))
-    private void onHandleMessage(CallbackInfo ci) {
-        ChatEvent.Companion.getEvent().invoker().onChat();
-    }
+    /**
+     * Mark the span as errored. Subsequent calls have no effect.
+     */
+    fun setError(message: String? = null): Span
 
+    fun recordException(throwable: Throwable): Span
+
+    /**
+     * Finalize the span. Idempotent — repeated calls are no-ops.
+     */
+    fun end()
 }

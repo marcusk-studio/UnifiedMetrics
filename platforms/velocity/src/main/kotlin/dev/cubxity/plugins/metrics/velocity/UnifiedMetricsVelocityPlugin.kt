@@ -22,10 +22,13 @@ import dev.cubxity.plugins.metrics.core.plugin.CoreUnifiedMetricsPlugin
 import dev.cubxity.plugins.metrics.velocity.bootstrap.UnifiedMetricsVelocityBootstrap
 import dev.cubxity.plugins.metrics.velocity.metric.events.EventsCollection
 import dev.cubxity.plugins.metrics.velocity.metric.server.ServerCollection
+import dev.cubxity.plugins.metrics.velocity.tracing.PlayerTracingListener
 
 class UnifiedMetricsVelocityPlugin(
     override val bootstrap: UnifiedMetricsVelocityBootstrap
 ) : CoreUnifiedMetricsPlugin() {
+    private var tracingListener: PlayerTracingListener? = null
+
     override fun registerPlatformService(api: UnifiedMetrics) {
         // Velocity doesn't have a service manager
     }
@@ -39,5 +42,16 @@ class UnifiedMetricsVelocityPlugin(
                 if (events) registerCollection(EventsCollection(bootstrap))
             }
         }
+    }
+
+    override fun registerPlatformTracing() {
+        val listener = PlayerTracingListener(this)
+        listener.register()
+        tracingListener = listener
+    }
+
+    override fun disposePlatformTracing() {
+        tracingListener?.dispose()
+        tracingListener = null
     }
 }

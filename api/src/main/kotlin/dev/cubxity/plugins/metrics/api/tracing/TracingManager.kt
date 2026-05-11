@@ -15,21 +15,26 @@
  *     along with UnifiedMetrics.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package dev.cubxity.plugins.metrics.fabric.mixins;
+package dev.cubxity.plugins.metrics.api.tracing
 
-import dev.cubxity.plugins.metrics.fabric.events.ChatEvent;
-import net.minecraft.server.network.ServerPlayNetworkHandler;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+interface TracingManager {
+    /**
+     * Whether tracing is enabled and a driver has been successfully initialized.
+     * When `false`, [tracer] returns [NoopTracer].
+     */
+    val isEnabled: Boolean
 
-@Mixin(ServerPlayNetworkHandler.class)
-public class ServerPlayNetworkHandlerMixin {
+    /**
+     * The currently active tracer, or [NoopTracer] when tracing is disabled or no
+     * driver has been initialized yet.
+     */
+    val tracer: Tracer
 
-    @Inject(method = "handleDecoratedMessage", at = @At("HEAD"))
-    private void onHandleMessage(CallbackInfo ci) {
-        ChatEvent.Companion.getEvent().invoker().onChat();
-    }
+    val driver: TracingDriver?
 
+    fun initialize()
+
+    fun registerDriver(name: String, factory: TracingDriverFactory<out Any>)
+
+    fun dispose()
 }

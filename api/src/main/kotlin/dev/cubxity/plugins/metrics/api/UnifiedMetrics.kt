@@ -20,6 +20,7 @@ package dev.cubxity.plugins.metrics.api
 import dev.cubxity.plugins.metrics.api.logging.Logger
 import dev.cubxity.plugins.metrics.api.metric.MetricsManager
 import dev.cubxity.plugins.metrics.api.platform.Platform
+import dev.cubxity.plugins.metrics.api.tracing.TracingManager
 import kotlinx.coroutines.CoroutineDispatcher
 
 /**
@@ -55,4 +56,9 @@ interface UnifiedMetrics {
      * The metrics api.
      */
     val metricsManager: MetricsManager
+
+    /**
+     * The tracing api.
+     */
+    val tracingManager: TracingManager
 }

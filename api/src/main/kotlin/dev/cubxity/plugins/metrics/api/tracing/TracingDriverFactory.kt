@@ -15,21 +15,15 @@
  *     along with UnifiedMetrics.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package dev.cubxity.plugins.metrics.fabric.mixins;
+package dev.cubxity.plugins.metrics.api.tracing
 
-import dev.cubxity.plugins.metrics.fabric.events.ChatEvent;
-import net.minecraft.server.network.ServerPlayNetworkHandler;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import dev.cubxity.plugins.metrics.api.UnifiedMetrics
+import kotlinx.serialization.KSerializer
 
-@Mixin(ServerPlayNetworkHandler.class)
-public class ServerPlayNetworkHandlerMixin {
+interface TracingDriverFactory<T : Any> {
+    val configSerializer: KSerializer<T>
 
-    @Inject(method = "handleDecoratedMessage", at = @At("HEAD"))
-    private void onHandleMessage(CallbackInfo ci) {
-        ChatEvent.Companion.getEvent().invoker().onChat();
-    }
+    val defaultConfig: T
 
+    fun createDriver(api: UnifiedMetrics, config: T): TracingDriver
 }

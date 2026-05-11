@@ -15,10 +15,28 @@
  *     along with UnifiedMetrics.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+plugins {
+    application
+}
+
+apply(plugin = "kotlinx-serialization")
+
 dependencies {
-    api(project(":unifiedmetrics-common"))
-    implementation(project(":unifiedmetrics-driver-influx"))
-    implementation(project(":unifiedmetrics-driver-prometheus"))
-    implementation(project(":unifiedmetrics-driver-dogstatsd"))
+    implementation(project(":unifiedmetrics-api"))
     implementation(project(":unifiedmetrics-tracing-otel"))
+
+    val otelVersion = "1.38.0"
+    runtimeOnly("io.opentelemetry:opentelemetry-api:$otelVersion")
+    runtimeOnly("io.opentelemetry:opentelemetry-sdk:$otelVersion")
+    runtimeOnly("io.opentelemetry:opentelemetry-exporter-otlp:$otelVersion")
+}
+
+application {
+    mainClass.set("dev.cubxity.plugins.metrics.tracing.test.TraceVerifierKt")
+}
+
+tasks.named<JavaExec>("run") {
+    // allow passing system props via gradle -Pjaeger=...
+    systemProperty("otlp.endpoint", System.getProperty("otlp.endpoint", System.getenv("OTLP_ENDPOINT") ?: "http://localhost:4317"))
+    systemProperty("jaeger.query", System.getProperty("jaeger.query", System.getenv("JAEGER_QUERY") ?: "http://localhost:16686"))
 }

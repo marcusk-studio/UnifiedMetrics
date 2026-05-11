@@ -18,19 +18,22 @@
 package dev.cubxity.plugins.metrics.bukkit
 
 import dev.cubxity.plugins.metrics.api.UnifiedMetrics
+import dev.cubxity.plugins.metrics.api.metric.DistributionSink
 import dev.cubxity.plugins.metrics.bukkit.bootstrap.UnifiedMetricsBukkitBootstrap
 import dev.cubxity.plugins.metrics.bukkit.metric.events.EventsCollection
 import dev.cubxity.plugins.metrics.bukkit.metric.server.ServerCollection
 import dev.cubxity.plugins.metrics.bukkit.metric.tick.TickCollection
 import dev.cubxity.plugins.metrics.bukkit.metric.world.WorldCollection
+import dev.cubxity.plugins.metrics.bukkit.tracing.PlayerTracingListener
 import dev.cubxity.plugins.metrics.core.plugin.CoreUnifiedMetricsPlugin
 import org.bukkit.plugin.ServicePriority
 import java.util.concurrent.Executors
 
 class UnifiedMetricsBukkitPlugin(
-    override val bootstrap: UnifiedMetricsBukkitBootstrap
+        override val bootstrap: UnifiedMetricsBukkitBootstrap
 ) : CoreUnifiedMetricsPlugin() {
     private val executor = Executors.newScheduledThreadPool(1)
+    private var tracingListener: PlayerTracingListener? = null
 
     override fun disable() {
         executor.shutdownNow()
@@ -48,9 +51,20 @@ class UnifiedMetricsBukkitPlugin(
             with(config.metrics.collectors) {
                 if (server) registerCollection(ServerCollection(bootstrap))
                 if (world) registerCollection(WorldCollection(bootstrap))
-                if (tick) registerCollection(TickCollection(bootstrap))
+                if (tick) registerCollection(TickCollection(bootstrap, driver as? DistributionSink))
                 if (events) registerCollection(EventsCollection(bootstrap))
             }
         }
+    }
+
+    override fun registerPlatformTracing() {
+        val listener = PlayerTracingListener(this)
+        listener.register()
+        tracingListener = listener
+    }
+
+    override fun disposePlatformTracing() {
+        tracingListener?.dispose()
+        tracingListener = null
     }
 }

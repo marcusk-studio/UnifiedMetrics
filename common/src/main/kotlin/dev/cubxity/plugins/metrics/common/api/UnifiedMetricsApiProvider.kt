@@ -21,6 +21,7 @@ import dev.cubxity.plugins.metrics.api.UnifiedMetrics
 import dev.cubxity.plugins.metrics.api.logging.Logger
 import dev.cubxity.plugins.metrics.api.metric.MetricsManager
 import dev.cubxity.plugins.metrics.api.platform.Platform
+import dev.cubxity.plugins.metrics.api.tracing.TracingManager
 import dev.cubxity.plugins.metrics.common.plugin.UnifiedMetricsPlugin
 import kotlinx.coroutines.CoroutineDispatcher
 
@@ -38,4 +39,7 @@ open class UnifiedMetricsApiProvider(val plugin: UnifiedMetricsPlugin) : Unified
 
     override val metricsManager: MetricsManager =
         MetricsManagerImpl(plugin)
+
+    override val tracingManager: TracingManager =
+        TracingManagerImpl(plugin)
 }

@@ -22,7 +22,8 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class UnifiedMetricsConfig(
     val server: UnifiedMetricsServerConfig = UnifiedMetricsServerConfig(),
-    val metrics: UnifiedMetricsMetricsConfig = UnifiedMetricsMetricsConfig()
+    val metrics: UnifiedMetricsMetricsConfig = UnifiedMetricsMetricsConfig(),
+    val tracing: UnifiedMetricsTracingConfig = UnifiedMetricsTracingConfig()
 )
 
 @Serializable
@@ -47,6 +48,44 @@ data class UnifiedMetricsCollectorsConfig(
     val world: Boolean = true,
     val tick: Boolean = true,
     val events: Boolean = true
+)
+
+@Serializable
+data class UnifiedMetricsTracingConfig(
+    val enabled: Boolean = true,
+    val driver: String = "otel",
+    /**
+     * Whether to propagate trace context from the proxy to backend Minecraft
+     * servers via the `unifiedmetrics:trace` plugin-message channel.
+     */
+    val propagation: Boolean = true,
+    val spans: UnifiedMetricsTracingSpansConfig = UnifiedMetricsTracingSpansConfig(),
+    val attributes: UnifiedMetricsTracingAttributesConfig = UnifiedMetricsTracingAttributesConfig()
+)
+
+@Serializable
+data class UnifiedMetricsTracingSpansConfig(
+    /** `player.login` (PreLogin -> PostLogin). */
+    val login: Boolean = true,
+    /** `player.backend_connect` (ServerPreConnect -> ServerPostConnect). */
+    val backendConnect: Boolean = true,
+    /** `player.server_session` (ServerPostConnect -> next switch / disconnect). */
+    val serverSession: Boolean = true,
+    /**
+     * `player.connection` — the long-lived parent span covering the entire
+     * proxy session. Disabled by default since APM backends typically warn
+     * about hour-long spans.
+     */
+    val session: Boolean = false
+)
+
+@Serializable
+data class UnifiedMetricsTracingAttributesConfig(
+    /**
+     * Whether to attach the player's remote IP as the `player.remote_addr`
+     * attribute. Disabled by default for privacy.
+     */
+    val includeRemoteAddr: Boolean = false
 )
 
 private fun env(name: String, default: String): String =
