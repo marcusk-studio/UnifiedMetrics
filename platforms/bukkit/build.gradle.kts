@@ -16,7 +16,7 @@
  */
 
 plugins {
-    id("com.github.johnrengelman.shadow")
+    id("com.gradleup.shadow")
 }
 
 repositories {
@@ -25,22 +25,21 @@ repositories {
 
 dependencies {
     api(project(":unifiedmetrics-core"))
-    compileOnly("com.destroystokyo.paper", "paper-api", "1.16.5-R0.1-SNAPSHOT")
+    compileOnly("io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT")
 }
 
 tasks {
     shadowJar {
         archiveClassifier.set("")
+        mergeServiceFiles()
         relocate("retrofit2", "dev.cubxity.plugins.metrics.libs.retrofit2")
         relocate("com.charleskorn", "dev.cubxity.plugins.metrics.libs.com.charleskorn")
         relocate("com.influxdb", "dev.cubxity.plugins.metrics.libs.com.influxdb")
         relocate("okhttp", "dev.cubxity.plugins.metrics.libs.okhttp")
         relocate("okio", "dev.cubxity.plugins.metrics.libs.okio")
+        relocate("com.datadoghq", "dev.cubxity.plugins.metrics.libs.com.datadoghq")
         relocate("io.prometheus", "dev.cubxity.plugins.metrics.libs.io.prometheus")
-
-        manifest {
-            attributes(mapOf("paperweight-mappings-namespace" to "mojang"))
-        }
+        relocate("io.opentelemetry", "dev.cubxity.plugins.metrics.libs.io.opentelemetry")
     }
     processResources {
         filesMatching("plugin.yml") {

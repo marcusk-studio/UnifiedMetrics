@@ -22,16 +22,15 @@ plugins {
     kotlin("jvm") version "2.1.20" apply false
     kotlin("kapt") version "2.1.20" apply false
     kotlin("plugin.serialization") version "2.1.20" apply false
-    id("com.github.johnrengelman.shadow") version "8.1.1" apply false
+    id("com.gradleup.shadow") version "9.0.0-beta13" apply false
 
-    // The fabric-loom plugin must be defined in the root project for it to function properly.
-    id("fabric-loom") version "1.10.5" apply false
+    id("fabric-loom") version "1.13-SNAPSHOT" apply false
 }
 
 allprojects {
     group = "dev.cubxity.plugins"
     description = "Fully featured metrics collector agent for Minecraft servers."
-    version = "0.3.10-SNAPSHOT"
+    version = "0.3.10" // x-release-please-version
 
     repositories {
         mavenCentral()
@@ -46,12 +45,16 @@ subprojects {
 
     tasks.withType<KotlinCompile> {
         compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_1_8)
+            jvmTarget.set(JvmTarget.JVM_21)
             freeCompilerArgs = listOf("-opt-in=kotlin.RequiresOptIn")
         }
     }
     configure<JavaPluginExtension> {
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
+        toolchain {
+            languageVersion.set(JavaLanguageVersion.of(21))
+        }
     }
     configure<PublishingExtension> {
         repositories {
@@ -70,12 +73,8 @@ subprojects {
         }
     }
     afterEvaluate {
-        configure<SigningExtension> {
-            sign(configurations["archives"])
-        }
         tasks.findByName("shadowJar")?.also {
             tasks.named("assemble") { dependsOn(it) }
-            tasks.named("signArchives") { dependsOn(it) }
         }
     }
 }

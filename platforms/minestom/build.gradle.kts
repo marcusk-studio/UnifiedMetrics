@@ -16,7 +16,7 @@
  */
 
 plugins {
-    id("com.github.johnrengelman.shadow")
+    id("com.gradleup.shadow")
 }
 
 repositories {
@@ -39,13 +39,9 @@ tasks {
         relocate("com.influxdb", "dev.cubxity.plugins.metrics.libs.com.influxdb")
         relocate("okhttp", "dev.cubxity.plugins.metrics.libs.okhttp")
         relocate("okio", "dev.cubxity.plugins.metrics.libs.okio")
+        relocate("com.datadoghq", "dev.cubxity.plugins.metrics.libs.com.datadoghq")
         relocate("io.prometheus", "dev.cubxity.plugins.metrics.libs.io.prometheus")
-    }
-    compileKotlin {
-        kotlinOptions.jvmTarget = "17"
-    }
-    compileTestKotlin {
-        kotlinOptions.jvmTarget = "17"
+        relocate("io.opentelemetry", "dev.cubxity.plugins.metrics.libs.io.opentelemetry")
     }
     processResources {
         filesMatching("extension.json") {
@@ -56,6 +52,3 @@ tasks {
     }
 }
 
-java {
-    targetCompatibility = JavaVersion.VERSION_17
-}

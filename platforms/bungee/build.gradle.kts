@@ -16,18 +16,17 @@
  */
 
 plugins {
-    id("com.github.johnrengelman.shadow")
+    id("com.gradleup.shadow")
 }
 
 repositories {
     maven("https://oss.sonatype.org/content/repositories/snapshots/")
-    maven("https://libraries.minecraft.net")
 }
 
 dependencies {
     api(project(":unifiedmetrics-core"))
 
-    compileOnly("net.md-5", "bungeecord-api", "1.21-R0.3-SNAPSHOT")
+    compileOnly("net.md-5", "bungeecord-api", "1.20-R0.1")
 }
 
 tasks {
@@ -38,7 +37,9 @@ tasks {
         relocate("com.influxdb", "dev.cubxity.plugins.metrics.libs.com.influxdb")
         relocate("okhttp", "dev.cubxity.plugins.metrics.libs.okhttp")
         relocate("okio", "dev.cubxity.plugins.metrics.libs.okio")
+        relocate("com.datadoghq", "dev.cubxity.plugins.metrics.libs.com.datadoghq")
         relocate("io.prometheus", "dev.cubxity.plugins.metrics.libs.io.prometheus")
+        relocate("io.opentelemetry", "dev.cubxity.plugins.metrics.libs.io.opentelemetry")
     }
     processResources {
         filesMatching("plugin.yml") {

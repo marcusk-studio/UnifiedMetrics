@@ -29,11 +29,11 @@ val transitiveInclude: Configuration by configurations.creating {
 
 dependencies {
     // https://fabricmc.net/versions.html
-    minecraft("com.mojang:minecraft:1.17.1")
-    mappings("net.fabricmc:yarn:1.17.1+build.65:v2")
+    minecraft("com.mojang:minecraft:1.21.11")
+    mappings("net.fabricmc:yarn:1.21.11+build.1:v2")
     modImplementation("net.fabricmc:fabric-loader:0.16.13")
 
-    modImplementation("net.fabricmc.fabric-api:fabric-api:0.46.1+1.17")
+    modImplementation("net.fabricmc.fabric-api:fabric-api:0.141.3+1.21.11")
     modImplementation("net.fabricmc:fabric-language-kotlin:1.13.2+kotlin.2.1.20")
 
     api(project(":unifiedmetrics-core"))
@@ -57,11 +57,12 @@ loom {
         }
     }
     serverOnlyMinecraftJar()
+    enableModProvidedJavadoc.set(false)
 }
 
 tasks {
     compileKotlin {
-        compilerOptions.jvmTarget.set(JvmTarget.JVM_16)
+        compilerOptions.jvmTarget.set(JvmTarget.JVM_21)
     }
     processResources {
         filesMatching("fabric.mod.json") {
@@ -76,6 +77,6 @@ tasks {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_16
-    targetCompatibility = JavaVersion.VERSION_16
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }

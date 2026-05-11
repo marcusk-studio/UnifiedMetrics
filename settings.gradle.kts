@@ -20,19 +20,25 @@ rootProject.name = "UnifiedMetrics"
 val modulePrefix = ":unifiedmetrics-"
 val platformPrefix = "platform-"
 val driverPrefix = "driver-"
+val tracingPrefix = "tracing-"
 
 include(modulePrefix + "api")
 include(modulePrefix + "common")
 include(modulePrefix + "core")
 
 include(modulePrefix + platformPrefix + "bukkit")
-//include(modulePrefix + platformPrefix + "minestom")
 include(modulePrefix + platformPrefix + "velocity")
-include(modulePrefix + platformPrefix + "bungee")
-include(modulePrefix + platformPrefix + "fabric")
+// Fabric is gated behind an opt-in flag while loom is being upgraded for 1.21.x.
+// Run with `-PincludeFabric=true` (or set in gradle.properties) to include it.
+if (settings.providers.gradleProperty("includeFabric").orNull == "true") {
+    include(modulePrefix + platformPrefix + "fabric")
+}
 
 include(modulePrefix + driverPrefix + "influx")
 include(modulePrefix + driverPrefix + "prometheus")
+include(modulePrefix + driverPrefix + "dogstatsd")
+
+include(modulePrefix + tracingPrefix + "otel")
 
 project(modulePrefix + "api").projectDir = File(rootDir, "api")
 project(modulePrefix + "common").projectDir = File(rootDir, "common")
@@ -40,14 +46,21 @@ project(modulePrefix + "core").projectDir = File(rootDir, "core")
 
 val platformsDir = File(rootDir, "platforms")
 project(modulePrefix + platformPrefix + "bukkit").projectDir = File(platformsDir, "bukkit")
-//project(modulePrefix + platformPrefix + "minestom").projectDir = File(platformsDir, "minestom")
 project(modulePrefix + platformPrefix + "velocity").projectDir = File(platformsDir, "velocity")
-project(modulePrefix + platformPrefix + "bungee").projectDir = File(platformsDir, "bungee")
-project(modulePrefix + platformPrefix + "fabric").projectDir = File(platformsDir, "fabric")
+if (settings.providers.gradleProperty("includeFabric").orNull == "true") {
+    project(modulePrefix + platformPrefix + "fabric").projectDir = File(platformsDir, "fabric")
+}
 
 val driversDir = File(rootDir, "drivers")
 project(modulePrefix + driverPrefix + "influx").projectDir = File(driversDir, "influx")
 project(modulePrefix + driverPrefix + "prometheus").projectDir = File(driversDir, "prometheus")
+project(modulePrefix + driverPrefix + "dogstatsd").projectDir = File(driversDir, "dogstatsd")
+
+val tracingDir = File(rootDir, "tracing")
+project(modulePrefix + tracingPrefix + "otel").projectDir = File(tracingDir, "otel")
+
+include(":trace-verifier")
+project(":trace-verifier").projectDir = File(rootDir, "test-k8s/trace-verifier")
 
 pluginManagement {
     repositories {
