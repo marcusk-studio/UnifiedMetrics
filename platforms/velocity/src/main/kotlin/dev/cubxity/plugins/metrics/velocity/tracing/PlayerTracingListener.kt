@@ -34,6 +34,7 @@ import dev.cubxity.plugins.metrics.common.config.UnifiedMetricsTracingConfig
 import dev.cubxity.plugins.metrics.velocity.UnifiedMetricsVelocityPlugin
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 
 class PlayerTracingListener(
     private val plugin: UnifiedMetricsVelocityPlugin
@@ -128,7 +129,12 @@ class PlayerTracingListener(
             state.startServerSession(target)
 
             if (tracingConfig.propagation) {
-                propagateContext(player, state)
+                // Velocity fires ServerConnectedEvent before committing the new
+                // ServerConnection to player.currentServer, so defer until it's populated.
+                bootstrap.server.scheduler
+                    .buildTask(bootstrap, Runnable { safe { propagateContext(player, state) } })
+                    .delay(100L, TimeUnit.MILLISECONDS)
+                    .schedule()
             }
         }
     }
@@ -146,7 +152,8 @@ class PlayerTracingListener(
             val span = state.activeServerSessionSpan ?: state.activeConnectionSpan ?: return@safe
             val headers = tracer.inject(span.context)
             val payload = TracingChannels.encode(headers) ?: return@safe
-            player.currentServer.ifPresent { it.sendPluginMessage(channel, payload) }
+            val server = player.currentServer.orElse(null) ?: return@safe
+            server.sendPluginMessage(channel, payload)
         }
     }
 
