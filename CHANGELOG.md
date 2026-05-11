@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.1](https://github.com/marcusk-studio/UnifiedMetrics/compare/v0.4.0...v0.4.1) (2026-05-11)
+
+
+### Bug Fixes
+
+* **ci:** remove package-name from release-please config ([acf092b](https://github.com/marcusk-studio/UnifiedMetrics/commit/acf092be7100cc2e7d0f8ff84d57029c52fe36af))
+* **ci:** remove package-name from release-please config ([81f0fc8](https://github.com/marcusk-studio/UnifiedMetrics/commit/81f0fc85cadb7df1d990f6e1075658c45f81a3f6))
+
 ## [0.4.0](https://github.com/marcusk-studio/UnifiedMetrics/compare/v0.3.10...v0.4.0) (2026-05-11)
 
 
