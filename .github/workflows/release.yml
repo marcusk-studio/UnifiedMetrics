@@ -1,52 +1,74 @@
-name: gradle-release-ci
-on:
+---
+name: Release
+"on":
+  workflow_dispatch: null
   push:
-    tags: [ "v*" ]
-
+    branches:
+      - dev/datadog
+concurrency:
+  group: "${{ github.workflow }}"
+  cancel-in-progress: false
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
 jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      releases_created: ${{ steps.rp.outputs.releases_created }}
+      tag_name: ${{ steps.rp.outputs.tag_name }}
+    steps:
+      - name: Release Please
+        id: rp
+        uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: .github/release-please-config.json
+          manifest-file: .github/.release-please-manifest.json
+
   build:
+    name: Build & attach release artifacts
+    # release-please-action emits booleans as JSON strings; accept either form.
+    if: ${{ needs.release-please.outputs.releases_created == 'true' || needs.release-please.outputs.releases_created == true }}
+    needs: [release-please]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
-      - name: Configure GPG Key
-        run: echo "${{secrets.SIGNING_KEY}}" | base64 --decode > /tmp/keyring.gpg
-      - name: Set up JDK 17
+
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          java-version: 17
-          distribution: zulu
-          cache: "gradle"
+          java-version: "21"
+          distribution: temurin
+          cache: gradle
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
-      - name: Build with Gradle
-        run: ./gradlew build --no-daemon -Psigning.keyId=${{secrets.SIGNING_KEY_ID}} -Psigning.password='${{secrets.SIGNING_KEY_PASSWORD}}' -Psigning.secretKeyRingFile=/tmp/keyring.gpg
-      - name: Set variables
-        id: vars
-        run: echo ::set-output name=version::${GITHUB_REF#refs/tags/v}
-      - uses: "marvinpinto/action-automatic-releases@latest"
-        with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          prerelease: false
-          title: "UnifiedMetrics ${{ steps.vars.outputs.version }}"
-          files: |
-            api/build/libs/*.jar
-            platforms/*/build/libs/*(.jar|!(*-dev.jar*))
-  publish:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Configure GPG Key
-        run: echo "${{secrets.SIGNING_KEY}}" | base64 --decode > /tmp/keyring.gpg
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: 17
-          distribution: zulu
-          cache: "gradle"
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-      - name: Publish with Gradle
-        run: ./gradlew publish --no-daemon -Psigning.keyId=${{secrets.SIGNING_KEY_ID}} -Psigning.password='${{secrets.SIGNING_KEY_PASSWORD}}' -Psigning.secretKeyRingFile=/tmp/keyring.gpg
+
+      - name: Build platform jars
+        run: |
+          ./gradlew --no-daemon \
+            :unifiedmetrics-platform-velocity:shadowJar \
+            :unifiedmetrics-platform-bukkit:shadowJar \
+            :unifiedmetrics-platform-fabric:remapJar \
+            -PincludeFabric=true
+
+      - name: Stage release artifacts
+        run: |
+          mkdir -p release-artifacts
+          cp platforms/velocity/build/libs/unifiedmetrics-platform-velocity-*.jar release-artifacts/
+          cp platforms/bukkit/build/libs/unifiedmetrics-platform-bukkit-*.jar release-artifacts/
+          cp platforms/fabric/build/libs/unifiedmetrics-platform-fabric-*.jar release-artifacts/
+          ls -lh release-artifacts/
+
+      - name: Upload artifacts to release
         env:
-          MAVEN_REPO_USER: ${{ secrets.MAVEN_REPO_USER }}
-          MAVEN_REPO_PASS: ${{ secrets.MAVEN_REPO_PASS }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ needs.release-please.outputs.tag_name }}" \
+            release-artifacts/*.jar \
+            --clobber \
+            --repo "${{ github.repository }}"
