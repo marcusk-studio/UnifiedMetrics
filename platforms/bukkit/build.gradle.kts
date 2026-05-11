@@ -32,6 +32,15 @@ tasks {
     shadowJar {
         archiveClassifier.set("")
         mergeServiceFiles()
+        // Several shaded deps (okhttp, okio, retrofit, kotlin-stdlib, etc.)
+        // each ship their own META-INF/LICENSE.txt and META-INF/NOTICE.txt.
+        // Without an explicit filter shadow keeps them all, producing a JAR
+        // that Paper's plugin remapper rejects with
+        // "Duplicate entries detected: META-INF/LICENSE.txt, ..." via
+        // NeoForged ART. The canonical copies live in META-INF/LICENSE and
+        // META-INF/NOTICE (no .txt suffix) so dropping the duplicates is
+        // safe from a licensing standpoint.
+        exclude("META-INF/LICENSE*", "META-INF/NOTICE*")
         relocate("retrofit2", "dev.cubxity.plugins.metrics.libs.retrofit2")
         relocate("com.charleskorn", "dev.cubxity.plugins.metrics.libs.com.charleskorn")
         relocate("com.influxdb", "dev.cubxity.plugins.metrics.libs.com.influxdb")

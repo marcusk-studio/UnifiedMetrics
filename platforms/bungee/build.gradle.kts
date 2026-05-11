@@ -32,6 +32,12 @@ dependencies {
 tasks {
     shadowJar {
         archiveClassifier.set("")
+        // Shaded deps (okhttp, retrofit, kotlin-stdlib, etc.) each ship
+        // their own META-INF/LICENSE.txt and META-INF/NOTICE.txt. Without
+        // a filter the shadow plugin keeps them all, producing a JAR
+        // with duplicate entries that some downstream tooling rejects.
+        // The canonical copies live at META-INF/LICENSE and META-INF/NOTICE.
+        exclude("META-INF/LICENSE*", "META-INF/NOTICE*")
         relocate("retrofit2", "dev.cubxity.plugins.metrics.libs.retrofit2")
         relocate("com.charleskorn", "dev.cubxity.plugins.metrics.libs.com.charleskorn")
         relocate("com.influxdb", "dev.cubxity.plugins.metrics.libs.com.influxdb")
