@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dogstatsd-test
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: dogstatsd-standalone
+  namespace: dogstatsd-test
+spec:
+  selector:
+    matchLabels:
+      app: dogstatsd
+  template:
+    metadata:
+      labels:
+        app: dogstatsd
+    spec:
+      containers:
+        - name: dogstatsd
+          image: datadog/dogstatsd:7
+          env:
+            - name: DD_DOGSTATSD_SOCKET
+              value: /var/run/datadog/dsd.socket
+            - name: DD_DOGSTATSD_NON_LOCAL_TRAFFIC
+              value: "true"
+            - name: DD_DOGSTATSD_ORIGIN_DETECTION
+              value: "true"
+            # Use a dummy API key — standalone DogStatsD still requires one
+            - name: DD_API_KEY
+              value: "0000000000000000000000000000dead"
+            - name: DD_LOG_LEVEL
+              value: "debug"
+          ports:
+            - containerPort: 8125
+              hostPort: 8125
+              protocol: UDP
+          volumeMounts:
+            - name: dsdsocket
+              mountPath: /var/run/datadog
+      volumes:
+        - name: dsdsocket
+          hostPath:
+            path: /var/run/datadog
+            type: DirectoryOrCreate

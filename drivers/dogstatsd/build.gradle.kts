@@ -15,31 +15,17 @@
  *     along with UnifiedMetrics.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package dev.cubxity.plugins.metrics.api.metric
+apply(plugin = "kotlinx-serialization")
 
-import dev.cubxity.plugins.metrics.api.metric.collector.CollectorCollection
-import dev.cubxity.plugins.metrics.api.metric.data.Metric
+dependencies {
+    compileOnly(project(":unifiedmetrics-api"))
+    implementation ("com.datadoghq","java-dogstatsd-client","4.2.0")
 
-interface MetricsManager {
-    val collections: List<CollectorCollection>
+    testImplementation(project(":unifiedmetrics-api"))
+    testImplementation(kotlin("test"))
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+}
 
-    /**
-     * Get the current metrics driver. Returns null if no driver is initialized.
-     */
-    val driver: MetricsDriver?
-
-    fun initialize()
-
-    fun registerCollection(collection: CollectorCollection)
-
-    fun unregisterCollection(collection: CollectorCollection)
-
-    fun registerDriver(name: String, factory: MetricsDriverFactory<out Any>)
-
-    /**
-     * This should be called asynchronously
-     */
-    suspend fun collect(): List<Metric>
-
-    fun dispose()
+tasks.test {
+    useJUnitPlatform()
 }

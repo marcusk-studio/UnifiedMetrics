@@ -15,31 +15,16 @@
  *     along with UnifiedMetrics.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package dev.cubxity.plugins.metrics.api.metric
+package dev.cubxity.plugins.metrics.bukkit.util
 
-import dev.cubxity.plugins.metrics.api.metric.collector.CollectorCollection
-import dev.cubxity.plugins.metrics.api.metric.data.Metric
+enum class BukkitPlatform {
+    Bukkit,
+    Paper;
 
-interface MetricsManager {
-    val collections: List<CollectorCollection>
-
-    /**
-     * Get the current metrics driver. Returns null if no driver is initialized.
-     */
-    val driver: MetricsDriver?
-
-    fun initialize()
-
-    fun registerCollection(collection: CollectorCollection)
-
-    fun unregisterCollection(collection: CollectorCollection)
-
-    fun registerDriver(name: String, factory: MetricsDriverFactory<out Any>)
-
-    /**
-     * This should be called asynchronously
-     */
-    suspend fun collect(): List<Metric>
-
-    fun dispose()
+    companion object {
+        val current = when {
+            classExists("com.destroystokyo.paper.event.server.ServerTickStartEvent") -> Paper
+            else -> Bukkit
+        }
+    }
 }

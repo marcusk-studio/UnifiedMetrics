@@ -24,7 +24,7 @@ version = "0.0.1-SNAPSHOT"
 
 repositories {
     mavenCentral()
-    maven("https://repo.papermc.io/repository/maven-public/")
+    maven("https://papermc.io/repo/repository/maven-public/")
 }
 
 dependencies {

@@ -63,7 +63,7 @@ Read the [wiki](https://docs.cubxity.dev/docs/unifiedmetrics/intro) for instruct
 Bloom has server splitting built-in, which makes it extremely easy to build your monitoring stack. Get high performance
 servers at Bloom by using [this link](https://billing.bloom.host/aff.php?aff=9).
 
-[![Bloom logo](https://bloom.host/banner.gif)](https://billing.bloom.host/aff.php?aff=9)
+[![Bloom logo](https://billing.bloom.host/templates/lagom/assets/img/logo/logo_big_inverse.svg)](https://billing.bloom.host/aff.php?aff=9)
 
 YourKit supports open source projects with innovative and intelligent tools for monitoring and profiling Java and .NET
 applications. YourKit is the creator of [YourKit Java Profiler](https://www.yourkit.com/java/profiler/),

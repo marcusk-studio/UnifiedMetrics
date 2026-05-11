@@ -17,27 +17,28 @@
 
 package dev.cubxity.plugins.metrics.bukkit.metric.tick
 
+import dev.cubxity.plugins.metrics.api.metric.DistributionSink
 import dev.cubxity.plugins.metrics.api.metric.collector.Collector
 import dev.cubxity.plugins.metrics.api.metric.collector.CollectorCollection
 import dev.cubxity.plugins.metrics.api.metric.collector.Histogram
 import dev.cubxity.plugins.metrics.api.metric.store.VolatileDoubleStore
 import dev.cubxity.plugins.metrics.api.metric.store.VolatileLongStore
 import dev.cubxity.plugins.metrics.bukkit.bootstrap.UnifiedMetricsBukkitBootstrap
-import dev.cubxity.plugins.metrics.bukkit.util.classExists
+import dev.cubxity.plugins.metrics.bukkit.util.BukkitPlatform
 import dev.cubxity.plugins.metrics.common.metric.Metrics
 
-class TickCollection(bootstrap: UnifiedMetricsBukkitBootstrap) : CollectorCollection {
-    private val reporter = if (classExists("com.destroystokyo.paper.event.server.ServerTickStartEvent")) {
-        PaperTickReporter(this, bootstrap)
-    } else {
-        BukkitTickReporter(this, bootstrap)
+class TickCollection(bootstrap: UnifiedMetricsBukkitBootstrap, distributionSink: DistributionSink? = null) : CollectorCollection {
+    private val reporter = when (BukkitPlatform.current) {
+        BukkitPlatform.Paper -> PaperTickReporter(this, bootstrap)
+        else -> BukkitTickReporter(this, bootstrap)
     }
 
     // The callback is called from a single thread
     private val tickDuration = Histogram(
         Metrics.Server.TickDurationSeconds,
         sumStoreFactory = VolatileDoubleStore,
-        countStoreFactory = VolatileLongStore
+        countStoreFactory = VolatileLongStore,
+        distributionSink = distributionSink
     )
 
     override val collectors: List<Collector> = listOf(tickDuration)
