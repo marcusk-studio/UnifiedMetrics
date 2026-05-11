@@ -33,6 +33,7 @@ tasks {
     shadowJar {
         archiveClassifier.set("")
         mergeServiceFiles()
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
         relocate("retrofit2", "dev.cubxity.plugins.metrics.libs.retrofit2")
         relocate("com.charleskorn", "dev.cubxity.plugins.metrics.libs.com.charleskorn")
         relocate("com.influxdb", "dev.cubxity.plugins.metrics.libs.com.influxdb")
