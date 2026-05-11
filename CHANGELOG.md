@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.3](https://github.com/marcusk-studio/UnifiedMetrics/compare/v0.4.2...v0.4.3) (2026-05-11)
+
+
+### Bug Fixes
+
+* **otel:** read OTLP endpoint from env vars when config is blank ([e395091](https://github.com/marcusk-studio/UnifiedMetrics/commit/e3950914604acebca8eec7c10c9a8b2e2cc3fc63))
+
 ## [0.4.2](https://github.com/marcusk-studio/UnifiedMetrics/compare/v0.4.1...v0.4.2) (2026-05-11)
 
 
