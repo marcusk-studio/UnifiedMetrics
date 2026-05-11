@@ -3,7 +3,6 @@
   "release-type": "simple",
   "packages": {
     ".": {
-      "package-name": "unifiedmetrics",
       "changelog-path": "CHANGELOG.md",
       "extra-files": [
         {
