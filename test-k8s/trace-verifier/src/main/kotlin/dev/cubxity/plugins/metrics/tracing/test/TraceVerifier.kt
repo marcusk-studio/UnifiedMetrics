@@ -124,6 +124,19 @@ fun main() {
             "server.name" to "lobby"
         )
     )
+
+    // Simulate world_ready: span from trace-context arrival to first player move.
+    val worldReady = backend.startSpan(
+        "player.world_ready",
+        parent = parent,
+        attributes = mapOf(
+            "player.username" to "Notch",
+            "server.name" to "lobby"
+        )
+    )
+    Thread.sleep(50)
+    worldReady.end()
+
     Thread.sleep(50)
     backendSpan.end()
 
@@ -163,6 +176,7 @@ private fun pollJaeger(base: String, traceId: String): Boolean {
     val expected = setOf(
         "player.connect",
         "player.login",
+        "player.world_ready",
         "player.server_connect",
         "player.disconnect",
         "player.backend.session"

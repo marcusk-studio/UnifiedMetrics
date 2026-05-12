@@ -70,7 +70,13 @@ data class UnifiedMetricsTracingSpansConfig(
     /** `player.server_connect` (ServerPreConnect -> ServerConnected). */
     val serverConnect: Boolean = true,
     /** `player.disconnect` — captures teardown, disconnect reason, and session duration. */
-    val disconnect: Boolean = true
+    val disconnect: Boolean = true,
+    /**
+     * `player.world_ready` (backend only) — measures time from trace-context
+     * arrival until the player's first movement, approximating how long the
+     * world takes to become playable after connecting to a server.
+     */
+    val worldReady: Boolean = true
 )
 
 @Serializable
