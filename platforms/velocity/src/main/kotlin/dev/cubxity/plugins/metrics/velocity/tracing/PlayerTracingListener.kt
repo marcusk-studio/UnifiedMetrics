@@ -21,11 +21,13 @@ import com.velocitypowered.api.event.PostOrder
 import com.velocitypowered.api.event.Subscribe
 import com.velocitypowered.api.event.connection.DisconnectEvent
 import com.velocitypowered.api.event.connection.PreLoginEvent
+import com.velocitypowered.api.event.player.KickedFromServerEvent
 import com.velocitypowered.api.event.player.ServerConnectedEvent
 import com.velocitypowered.api.event.player.ServerPreConnectEvent
 import com.velocitypowered.api.event.player.PlayerChooseInitialServerEvent
 import com.velocitypowered.api.proxy.Player
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
 import dev.cubxity.plugins.metrics.api.tracing.Span
 import dev.cubxity.plugins.metrics.api.tracing.SpanContext
 import dev.cubxity.plugins.metrics.api.tracing.Tracer
@@ -140,10 +142,22 @@ class PlayerTracingListener(
     }
 
     @Subscribe(order = PostOrder.LAST)
+    fun onKickedFromServer(event: KickedFromServerEvent) {
+        safe {
+            val state = states[event.player.uniqueId] ?: return@safe
+            val server = event.server.serverInfo.name
+            val reason = event.serverKickReason
+                .map { PlainTextComponentSerializer.plainText().serialize(it) }
+                .orElse(null)
+            state.recordKick(server, reason, event.kickedDuringServerConnect())
+        }
+    }
+
+    @Subscribe(order = PostOrder.LAST)
     fun onDisconnect(event: DisconnectEvent) {
         safe {
             val state = states.remove(event.player.uniqueId) ?: return@safe
-            state.endAll()
+            state.endAll(event.loginStatus.name.lowercase())
         }
     }
 
@@ -252,15 +266,39 @@ internal class PlayerTraceState(
     }
 
     @Synchronized
-    fun endAll() {
-        activeBackendConnectSpan?.setError("disconnected")
+    fun recordKick(server: String, reason: String?, duringConnect: Boolean) {
+        val target = if (duringConnect) activeBackendConnectSpan else activeServerSessionSpan
+        target?.setAttribute("kick.server", server)
+        if (reason != null) target?.setAttribute("kick.reason", reason)
+        target?.setError(reason ?: "kicked")
+    }
+
+    @Synchronized
+    fun endAll(reason: String? = null) {
+        val hadOpenLogin = activeLoginSpan != null
+        val hadOpenBackendConnect = activeBackendConnectSpan != null
+
+        activeBackendConnectSpan?.setError(reason ?: "disconnected")
         activeBackendConnectSpan?.end()
         activeBackendConnectSpan = null
+
+        activeServerSessionSpan?.apply {
+            if (reason != null) setAttribute("disconnect.reason", reason)
+        }
         activeServerSessionSpan?.end()
         activeServerSessionSpan = null
-        activeLoginSpan?.setError("disconnected")
+
+        activeLoginSpan?.setError(reason ?: "disconnected")
         activeLoginSpan?.end()
         activeLoginSpan = null
+
+        activeConnectionSpan?.apply {
+            if (reason != null) setAttribute("disconnect.reason", reason)
+            // Mark connection as error if login or backend connect was still in progress
+            if (hadOpenLogin || hadOpenBackendConnect) {
+                setError(reason ?: "disconnected")
+            }
+        }
         activeConnectionSpan?.end()
         activeConnectionSpan = null
     }
