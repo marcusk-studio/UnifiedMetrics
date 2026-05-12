@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.5](https://github.com/marcusk-studio/UnifiedMetrics/compare/v0.4.4...v0.4.5) (2026-05-12)
+
+
+### Bug Fixes
+
+* **tracing:** respect DD_SERVICE for service name and fix span correlation ([#14](https://github.com/marcusk-studio/UnifiedMetrics/issues/14)) ([5fad839](https://github.com/marcusk-studio/UnifiedMetrics/commit/5fad8390370549a386ac385ae9c58a4592906bf8))
+
 ## [0.4.4](https://github.com/marcusk-studio/UnifiedMetrics/compare/v0.4.3...v0.4.4) (2026-05-11)
 
 
