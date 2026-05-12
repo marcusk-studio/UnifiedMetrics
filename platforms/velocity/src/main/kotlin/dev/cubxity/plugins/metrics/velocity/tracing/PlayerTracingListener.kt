@@ -187,9 +187,10 @@ internal class PlayerTraceState(
     @Synchronized
     fun startConnection(username: String, attributes: Map<String, String>) {
         if (activeConnectionSpan != null) return
-        if (config.spans.session) {
-            activeConnectionSpan = tracer.startSpan("player.connection", attributes = attributes)
-        }
+        // Always create the connection span so child spans (login, backend_connect,
+        // server_session) share the same trace ID via parent context, even when
+        // session tracking is disabled.
+        activeConnectionSpan = tracer.startSpan("player.connection", attributes = attributes)
     }
 
     @Synchronized

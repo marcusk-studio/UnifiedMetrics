@@ -85,7 +85,9 @@ class OtelTracingDriver(
         }
 
         // Build our own SDK + OTLP exporter.
-        val serviceName = config.serviceName.ifBlank { api.serverName }
+        val serviceName = System.getenv("DD_SERVICE")?.takeIf { it.isNotBlank() }
+            ?: System.getenv("OTEL_SERVICE_NAME")?.takeIf { it.isNotBlank() }
+            ?: config.serviceName.ifBlank { api.serverName }
         val deploymentEnv = config.deploymentEnvironment.ifBlank {
             System.getenv("OTEL_DEPLOYMENT_ENVIRONMENT").orEmpty()
         }
