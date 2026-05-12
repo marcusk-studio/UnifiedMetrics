@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/marcusk-studio/UnifiedMetrics/compare/v0.4.5...v0.5.0) (2026-05-12)
+
+
+### Features
+
+* **velocity:** capture disconnect reason and kick info on trace spans ([#15](https://github.com/marcusk-studio/UnifiedMetrics/issues/15)) ([7119556](https://github.com/marcusk-studio/UnifiedMetrics/commit/71195564bbad5966252635efeaca295870023dda))
+
 ## [0.4.5](https://github.com/marcusk-studio/UnifiedMetrics/compare/v0.4.4...v0.4.5) (2026-05-12)
 
 
