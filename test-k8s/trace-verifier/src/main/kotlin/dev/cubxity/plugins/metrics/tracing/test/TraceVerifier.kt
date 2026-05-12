@@ -116,16 +116,10 @@ fun main() {
     val parent = requireNotNull(backend.extract(backendHeaders)) {
         "backend tracer failed to extract context"
     }
-    val backendSpan = backend.startSpan(
-        "player.backend.session",
-        parent = parent,
-        attributes = mapOf(
-            "player.username" to "Notch",
-            "server.name" to "lobby"
-        )
-    )
 
     // Simulate world_ready: span from trace-context arrival to first player move.
+    // In production the span starts immediately on plugin-message receipt but
+    // only ends after a 150 ms grace period + genuine position change.
     val worldReady = backend.startSpan(
         "player.world_ready",
         parent = parent,
@@ -134,11 +128,8 @@ fun main() {
             "server.name" to "lobby"
         )
     )
-    Thread.sleep(50)
+    Thread.sleep(100)
     worldReady.end()
-
-    Thread.sleep(50)
-    backendSpan.end()
 
     val disconnect = proxy.startSpan(
         "player.disconnect",
@@ -178,8 +169,7 @@ private fun pollJaeger(base: String, traceId: String): Boolean {
         "player.login",
         "player.world_ready",
         "player.server_connect",
-        "player.disconnect",
-        "player.backend.session"
+        "player.disconnect"
     )
     val expectedServices = setOf("unifiedmetrics-proxy", "unifiedmetrics-backend")
 

@@ -40,8 +40,15 @@ class PlayerTracingListener(
     private val server get() = bootstrap.server
     private val tracingConfig: UnifiedMetricsTracingConfig get() = plugin.config.tracing
 
-    private val activeSessionSpans: MutableMap<UUID, Span> = ConcurrentHashMap()
-    private val activeWorldReadySpans: MutableMap<UUID, Span> = ConcurrentHashMap()
+    /**
+     * Tracks the world-ready span alongside the nanoTime at which it was
+     * created. The timestamp lets [onMove] skip server-initiated movements
+     * (spawn teleport, respawn, etc.) that fire within the first 150 ms of
+     * the join sequence.
+     */
+    private data class WorldReadyState(val span: Span, val startNanos: Long)
+
+    private val activeWorldReadySpans: MutableMap<UUID, WorldReadyState> = ConcurrentHashMap()
 
     private val tracer: Tracer
         get() = plugin.apiProvider.tracingManager.tracer
@@ -58,10 +65,8 @@ class PlayerTracingListener(
         } catch (_: Throwable) {
         }
         HandlerList.unregisterAll(this)
-        activeWorldReadySpans.values.forEach { safe { it.end() } }
+        activeWorldReadySpans.values.forEach { safe { it.span.end() } }
         activeWorldReadySpans.clear()
-        activeSessionSpans.values.forEach { safe { it.end() } }
-        activeSessionSpans.clear()
     }
 
     override fun onPluginMessageReceived(channel: String, player: Player, message: ByteArray) {
@@ -70,39 +75,32 @@ class PlayerTracingListener(
             val headers = TracingChannels.decode(message) ?: return@safe
             val parent = tracer.extract(headers) ?: return@safe
 
-            // End any prior spans for this player (e.g. on backend switch via reconnect).
-            activeWorldReadySpans.remove(player.uniqueId)?.end()
-            activeSessionSpans.remove(player.uniqueId)?.end()
-
-            val attrs = mapOf(
-                "player.username" to player.name,
-                "player.uuid" to player.uniqueId.toString(),
-                "server.name" to plugin.apiProvider.serverName
-            )
-
-            val session = tracer.startSpan(
-                "player.backend.session",
-                parent = parent,
-                attributes = attrs
-            )
-            activeSessionSpans[player.uniqueId] = session
+            // End any prior world_ready span for this player (e.g. on backend switch).
+            activeWorldReadySpans.remove(player.uniqueId)?.span?.end()
 
             if (tracingConfig.spans.worldReady) {
+                val attrs = mapOf(
+                    "player.username" to player.name,
+                    "player.uuid" to player.uniqueId.toString(),
+                    "server.name" to plugin.apiProvider.serverName
+                )
+
                 val worldReady = tracer.startSpan(
                     "player.world_ready",
                     parent = parent,
                     attributes = attrs
                 )
-                activeWorldReadySpans[player.uniqueId] = worldReady
+                activeWorldReadySpans[player.uniqueId] =
+                    WorldReadyState(worldReady, System.nanoTime())
 
                 // Timeout: if the player never moves within 30 seconds, end the
                 // span so it does not leak. This covers AFK joins or unusual
                 // client states.
                 server.scheduler.runTaskLater(bootstrap, Runnable {
                     safe {
-                        activeWorldReadySpans.remove(player.uniqueId)?.let { span ->
-                            span.setAttribute("world_ready.timeout", true)
-                            span.end()
+                        activeWorldReadySpans.remove(player.uniqueId)?.let { state ->
+                            state.span.setAttribute("world_ready.timeout", true)
+                            state.span.end()
                         }
                     }
                 }, 600L) // 30 seconds = 600 ticks
@@ -111,21 +109,33 @@ class PlayerTracingListener(
     }
 
     /**
-     * End the `player.world_ready` span on the player's first movement.
-     * Any [PlayerMoveEvent] (including head rotation) indicates the client
-     * has received enough world data to interact.
+     * End the `player.world_ready` span on the player's first genuine
+     * movement. Two filters prevent false positives:
+     *
+     * 1. **Position check** -- head-only rotation (same x/y/z, different
+     *    yaw/pitch) is ignored; the player must change position.
+     * 2. **Grace period** -- movements within the first 150 ms after the
+     *    trace context arrives are skipped. This covers the spawn teleport
+     *    and any other server-initiated repositioning during the join
+     *    sequence.
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     fun onMove(event: PlayerMoveEvent) {
-        val span = activeWorldReadySpans.remove(event.player.uniqueId) ?: return
-        safe { span.end() }
+        val state = activeWorldReadySpans[event.player.uniqueId] ?: return
+        val from = event.from
+        val to = event.to ?: return
+        // Skip head-only rotation.
+        if (from.x == to.x && from.y == to.y && from.z == to.z) return
+        // Skip server-initiated movements during the join sequence.
+        if (System.nanoTime() - state.startNanos < 150_000_000L) return
+        activeWorldReadySpans.remove(event.player.uniqueId) ?: return
+        safe { state.span.end() }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     fun onQuit(event: PlayerQuitEvent) {
         safe {
-            activeWorldReadySpans.remove(event.player.uniqueId)?.end()
-            activeSessionSpans.remove(event.player.uniqueId)?.end()
+            activeWorldReadySpans.remove(event.player.uniqueId)?.span?.end()
         }
     }
 
