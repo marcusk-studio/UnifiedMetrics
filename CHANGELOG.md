@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.0](https://github.com/marcusk-studio/UnifiedMetrics/compare/v0.5.0...v0.6.0) (2026-05-12)
+
+
+### Features
+
+* **bukkit:** add player.world_ready span measuring time to first move ([#19](https://github.com/marcusk-studio/UnifiedMetrics/issues/19)) ([00a1643](https://github.com/marcusk-studio/UnifiedMetrics/commit/00a16430992b534be54201a9f7b32d51425be345))
+* **velocity:** replace long-lived session span with instant connect/disconnect ([#17](https://github.com/marcusk-studio/UnifiedMetrics/issues/17)) ([5ed48a6](https://github.com/marcusk-studio/UnifiedMetrics/commit/5ed48a69f4a30c3fc2fcfd47fb27f2ba497b5102))
+
 ## [0.5.0](https://github.com/marcusk-studio/UnifiedMetrics/compare/v0.4.5...v0.5.0) (2026-05-12)
 
 
