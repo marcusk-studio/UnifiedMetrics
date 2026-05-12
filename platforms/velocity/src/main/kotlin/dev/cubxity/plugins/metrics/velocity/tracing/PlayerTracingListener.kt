@@ -59,7 +59,6 @@ class PlayerTracingListener(
     fun dispose() {
         bootstrap.server.eventManager.unregisterListener(bootstrap, this)
         bootstrap.server.channelRegistrar.unregister(channel)
-        // End any spans that are still open.
         states.values.forEach { state ->
             safe { state.endAll() }
         }
@@ -86,23 +85,19 @@ class PlayerTracingListener(
                 attrs["player.virtual_host"] = "${it.hostString}:${it.port}"
             }
 
-            // We don't have the UUID until login completes; use username keying for now,
-            // and migrate to UUID in the player-server choice / connect events.
             val state = pendingByName.computeIfAbsent(username) { PlayerTraceState(tracer, tracingConfig) }
-            state.startConnection(username, attrs)
+            state.startConnect(username, attrs)
             state.startLogin()
         }
     }
 
     @Subscribe(order = PostOrder.NORMAL)
     fun onChooseInitialServer(event: PlayerChooseInitialServerEvent) {
-        // PreLoginEvent fires before the Player object exists; at this point we can rebind
-        // the pending state to the player UUID.
         safe {
             val player = event.player
             val pending = pendingByName.remove(player.username)
             val state = pending ?: PlayerTraceState(tracer, tracingConfig).also {
-                it.startConnection(player.username, mapOf("player.username" to player.username))
+                it.startConnect(player.username, mapOf("player.username" to player.username))
             }
             state.bind(player.uniqueId)
             states[player.uniqueId] = state
@@ -116,8 +111,7 @@ class PlayerTracingListener(
         safe {
             val state = states[event.player.uniqueId] ?: return@safe
             val target = event.result.server.orElse(event.originalServer).serverInfo.name
-            state.endServerSession()
-            state.startBackendConnect(target)
+            state.startServerConnect(target)
         }
     }
 
@@ -127,12 +121,9 @@ class PlayerTracingListener(
             val player = event.player
             val state = states[player.uniqueId] ?: return@safe
             val target = event.server.serverInfo.name
-            state.endBackendConnect(target)
-            state.startServerSession(target)
+            state.endServerConnect(target)
 
             if (tracingConfig.propagation) {
-                // Velocity fires ServerConnectedEvent before committing the new
-                // ServerConnection to player.currentServer, so defer until it's populated.
                 bootstrap.server.scheduler
                     .buildTask(bootstrap, Runnable { safe { propagateContext(player, state) } })
                     .delay(100L, TimeUnit.MILLISECONDS)
@@ -163,8 +154,8 @@ class PlayerTracingListener(
 
     private fun propagateContext(player: Player, state: PlayerTraceState) {
         safe {
-            val span = state.activeServerSessionSpan ?: state.activeConnectionSpan ?: return@safe
-            val headers = tracer.inject(span.context)
+            val ctx = state.traceContext ?: return@safe
+            val headers = tracer.inject(ctx)
             val payload = TracingChannels.encode(headers) ?: return@safe
             val server = player.currentServer.orElse(null) ?: return@safe
             server.sendPluginMessage(channel, payload)
@@ -189,28 +180,36 @@ internal class PlayerTraceState(
     private val tracer: Tracer,
     private val config: UnifiedMetricsTracingConfig
 ) {
-    var activeConnectionSpan: Span? = null
+    /** Trace context from the anchor span. All child spans use this as parent. */
+    var traceContext: SpanContext? = null
         private set
+
     private var activeLoginSpan: Span? = null
-    private var activeBackendConnectSpan: Span? = null
-    var activeServerSessionSpan: Span? = null
-        private set
+    private var activeServerConnectSpan: Span? = null
+    private var activeDisconnectSpan: Span? = null
 
     private var uuid: UUID? = null
+    private var username: String? = null
+    private var connectTimeMs: Long = 0
 
+    /**
+     * Create an instant `player.connect` anchor span. This establishes the
+     * trace ID that all subsequent child spans inherit. The span is ended
+     * immediately so no long-lived span sits in memory.
+     */
     @Synchronized
-    fun startConnection(username: String, attributes: Map<String, String>) {
-        if (activeConnectionSpan != null) return
-        // Always create the connection span so child spans (login, backend_connect,
-        // server_session) share the same trace ID via parent context, even when
-        // session tracking is disabled.
-        activeConnectionSpan = tracer.startSpan("player.connection", attributes = attributes)
+    fun startConnect(username: String, attributes: Map<String, String>) {
+        if (traceContext != null) return
+        this.username = username
+        connectTimeMs = System.currentTimeMillis()
+        val anchor = tracer.startSpan("player.connect", attributes = attributes)
+        traceContext = anchor.context
+        anchor.end()
     }
 
     @Synchronized
     fun bind(uuid: UUID) {
         this.uuid = uuid
-        activeConnectionSpan?.setAttribute("player.uuid", uuid.toString())
     }
 
     @Synchronized
@@ -219,7 +218,7 @@ internal class PlayerTraceState(
         if (activeLoginSpan != null) return
         activeLoginSpan = tracer.startSpan(
             "player.login",
-            parent = activeConnectionSpan?.context
+            parent = traceContext
         )
     }
 
@@ -230,76 +229,104 @@ internal class PlayerTraceState(
     }
 
     @Synchronized
-    fun startBackendConnect(target: String) {
-        if (!config.spans.backendConnect) return
-        if (activeBackendConnectSpan != null) {
-            activeBackendConnectSpan?.end()
-        }
-        activeBackendConnectSpan = tracer.startSpan(
-            "player.backend_connect",
-            parent = activeConnectionSpan?.context,
-            attributes = mapOf("target.server" to target)
-        )
-    }
-
-    @Synchronized
-    fun endBackendConnect(target: String) {
-        activeBackendConnectSpan?.setAttribute("target.server", target)
-        activeBackendConnectSpan?.end()
-        activeBackendConnectSpan = null
-    }
-
-    @Synchronized
-    fun startServerSession(target: String) {
-        if (!config.spans.serverSession) return
-        activeServerSessionSpan = tracer.startSpan(
-            "player.server_session",
-            parent = activeConnectionSpan?.context,
+    fun startServerConnect(target: String) {
+        if (!config.spans.serverConnect) return
+        // End any previous server_connect span (defensive; should already be ended).
+        activeServerConnectSpan?.end()
+        activeServerConnectSpan = tracer.startSpan(
+            "player.server_connect",
+            parent = traceContext,
             attributes = mapOf("server.name" to target)
         )
     }
 
     @Synchronized
-    fun endServerSession() {
-        activeServerSessionSpan?.end()
-        activeServerSessionSpan = null
+    fun endServerConnect(target: String) {
+        activeServerConnectSpan?.setAttribute("server.name", target)
+        activeServerConnectSpan?.end()
+        activeServerConnectSpan = null
     }
 
+    /**
+     * Record a kick event. Marks the in-flight server_connect span as error
+     * if the kick happened during connect, and starts the disconnect span
+     * (since a kick initiates the disconnect sequence).
+     */
     @Synchronized
     fun recordKick(server: String, reason: String?, duringConnect: Boolean) {
-        val target = if (duringConnect) activeBackendConnectSpan else activeServerSessionSpan
-        target?.setAttribute("kick.server", server)
-        if (reason != null) target?.setAttribute("kick.reason", reason)
-        target?.setError(reason ?: "kicked")
+        if (duringConnect) {
+            activeServerConnectSpan?.setAttribute("kick.server", server)
+            if (reason != null) activeServerConnectSpan?.setAttribute("kick.reason", reason)
+            activeServerConnectSpan?.setError(reason ?: "kicked")
+        }
+
+        // Start the disconnect span early; the kick is the beginning of disconnect.
+        startDisconnect(
+            reason = reason ?: "kicked",
+            kickServer = server,
+            kickReason = reason
+        )
+        activeDisconnectSpan?.setError(reason ?: "kicked")
     }
 
+    /**
+     * End all open spans. Called from [DisconnectEvent].
+     */
     @Synchronized
     fun endAll(reason: String? = null) {
         val hadOpenLogin = activeLoginSpan != null
-        val hadOpenBackendConnect = activeBackendConnectSpan != null
+        val hadOpenServerConnect = activeServerConnectSpan != null
 
-        activeBackendConnectSpan?.setError(reason ?: "disconnected")
-        activeBackendConnectSpan?.end()
-        activeBackendConnectSpan = null
-
-        activeServerSessionSpan?.apply {
-            if (reason != null) setAttribute("disconnect.reason", reason)
+        if (hadOpenServerConnect) {
+            activeServerConnectSpan?.setError(reason ?: "disconnected")
         }
-        activeServerSessionSpan?.end()
-        activeServerSessionSpan = null
+        activeServerConnectSpan?.end()
+        activeServerConnectSpan = null
 
-        activeLoginSpan?.setError(reason ?: "disconnected")
+        if (hadOpenLogin) {
+            activeLoginSpan?.setError(reason ?: "disconnected")
+        }
         activeLoginSpan?.end()
         activeLoginSpan = null
 
-        activeConnectionSpan?.apply {
-            if (reason != null) setAttribute("disconnect.reason", reason)
-            // Mark connection as error if login or backend connect was still in progress
-            if (hadOpenLogin || hadOpenBackendConnect) {
-                setError(reason ?: "disconnected")
-            }
+        // Create the disconnect span if not already started by a kick.
+        if (activeDisconnectSpan == null) {
+            startDisconnect(reason = reason)
+        } else if (reason != null) {
+            activeDisconnectSpan?.setAttribute("disconnect.reason", reason)
         }
-        activeConnectionSpan?.end()
-        activeConnectionSpan = null
+
+        if (hadOpenLogin || hadOpenServerConnect) {
+            activeDisconnectSpan?.setError(reason ?: "disconnected")
+        }
+
+        activeDisconnectSpan?.end()
+        activeDisconnectSpan = null
+        traceContext = null
+    }
+
+    private fun startDisconnect(
+        reason: String?,
+        kickServer: String? = null,
+        kickReason: String? = null
+    ) {
+        if (!config.spans.disconnect) return
+        if (activeDisconnectSpan != null) return
+
+        val attrs = mutableMapOf<String, String>()
+        username?.let { attrs["player.username"] = it }
+        uuid?.let { attrs["player.uuid"] = it.toString() }
+        if (reason != null) attrs["disconnect.reason"] = reason
+        if (kickServer != null) attrs["kick.server"] = kickServer
+        if (kickReason != null) attrs["kick.reason"] = kickReason
+        if (connectTimeMs > 0) {
+            attrs["session.duration_ms"] = (System.currentTimeMillis() - connectTimeMs).toString()
+        }
+
+        activeDisconnectSpan = tracer.startSpan(
+            "player.disconnect",
+            parent = traceContext,
+            attributes = attrs
+        )
     }
 }

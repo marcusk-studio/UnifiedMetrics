@@ -65,18 +65,12 @@ data class UnifiedMetricsTracingConfig(
 
 @Serializable
 data class UnifiedMetricsTracingSpansConfig(
-    /** `player.login` (PreLogin -> PostLogin). */
+    /** `player.login` (PreLogin -> ChooseInitialServer). */
     val login: Boolean = true,
-    /** `player.backend_connect` (ServerPreConnect -> ServerPostConnect). */
-    val backendConnect: Boolean = true,
-    /** `player.server_session` (ServerPostConnect -> next switch / disconnect). */
-    val serverSession: Boolean = true,
-    /**
-     * `player.connection` — the long-lived parent span covering the entire
-     * proxy session. Disabled by default since APM backends typically warn
-     * about hour-long spans.
-     */
-    val session: Boolean = false
+    /** `player.server_connect` (ServerPreConnect -> ServerConnected). */
+    val serverConnect: Boolean = true,
+    /** `player.disconnect` — captures teardown, disconnect reason, and session duration. */
+    val disconnect: Boolean = true
 )
 
 @Serializable
