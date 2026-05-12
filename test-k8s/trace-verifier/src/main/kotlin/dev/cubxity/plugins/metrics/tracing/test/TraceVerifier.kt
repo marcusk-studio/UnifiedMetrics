@@ -35,11 +35,11 @@ import java.util.concurrent.TimeUnit
 /**
  * End-to-end trace verifier for the UnifiedMetrics OTel tracing driver.
  *
- * Simulates the full proxy→backend tracing flow in two separate
+ * Simulates the full proxy->backend tracing flow in two separate
  * [OtelTracingDriver] instances (mimicking two JVMs) sharing one Jaeger backend:
  *
- *   1. Proxy emits `player.connection` (root) → `player.login`,
- *      `player.backend_connect`, `player.server_session`.
+ *   1. Proxy emits `player.connect` (instant anchor) -> `player.login`,
+ *      `player.server_connect`, `player.disconnect`.
  *   2. Headers are injected via the Tracer and serialized through
  *      [TracingChannels.encode] / [TracingChannels.decode] (the wire format).
  *   3. Backend extracts the context and emits `player.backend.session` as a
@@ -84,31 +84,28 @@ fun main() {
     val proxy = proxyDriver.tracer
     val backend = backendDriver.tracer
 
-    // Simulate proxy lifecycle.
-    val connection = proxy.startSpan(
-        "player.connection",
+    // Simulate proxy lifecycle: instant anchor -> login -> server_connect -> disconnect.
+    val anchor = proxy.startSpan(
+        "player.connect",
         attributes = mapOf("player.username" to "Notch")
     )
-    val login = proxy.startSpan("player.login", parent = connection.context)
+    val traceCtx = anchor.context
+    anchor.end()
+
+    val login = proxy.startSpan("player.login", parent = traceCtx)
     Thread.sleep(20)
     login.end()
 
-    val backendConnect = proxy.startSpan(
-        "player.backend_connect",
-        parent = connection.context,
-        attributes = mapOf("target.server" to "lobby")
-    )
-    Thread.sleep(20)
-    backendConnect.end()
-
-    val serverSession = proxy.startSpan(
-        "player.server_session",
-        parent = connection.context,
+    val serverConnect = proxy.startSpan(
+        "player.server_connect",
+        parent = traceCtx,
         attributes = mapOf("server.name" to "lobby")
     )
+    Thread.sleep(20)
+    serverConnect.end()
 
-    // Wire transfer: proxy → backend via TracingChannels payload.
-    val proxyHeaders = proxy.inject(serverSession.context)
+    // Wire transfer: proxy -> backend via TracingChannels payload.
+    val proxyHeaders = proxy.inject(traceCtx)
     val payload = requireNotNull(TracingChannels.encode(proxyHeaders)) { "encode returned null" }
     val backendHeaders = requireNotNull(TracingChannels.decode(payload)) { "decode returned null" }
     require(proxyHeaders["traceparent"] == backendHeaders["traceparent"]) {
@@ -129,8 +126,17 @@ fun main() {
     )
     Thread.sleep(50)
     backendSpan.end()
-    serverSession.end()
-    connection.end()
+
+    val disconnect = proxy.startSpan(
+        "player.disconnect",
+        parent = traceCtx,
+        attributes = mapOf(
+            "player.username" to "Notch",
+            "disconnect.reason" to "successful_login",
+            "session.duration_ms" to "110"
+        )
+    )
+    disconnect.end()
 
     // The proxy traceparent looks like: 00-<traceId>-<spanId>-<flags>.
     val traceId = backendHeaders["traceparent"]!!.split("-")[1]
@@ -155,10 +161,10 @@ private fun pollJaeger(base: String, traceId: String): Boolean {
     val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(60)
     val url = URL("$base/api/traces/$traceId")
     val expected = setOf(
-        "player.connection",
+        "player.connect",
         "player.login",
-        "player.backend_connect",
-        "player.server_session",
+        "player.server_connect",
+        "player.disconnect",
         "player.backend.session"
     )
     val expectedServices = setOf("unifiedmetrics-proxy", "unifiedmetrics-backend")
