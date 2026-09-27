@@ -19,6 +19,7 @@ package dev.cubxity.plugins.metrics.bukkit
 
 import dev.cubxity.plugins.metrics.api.UnifiedMetrics
 import dev.cubxity.plugins.metrics.api.metric.DistributionSink
+import dev.cubxity.plugins.metrics.bukkit.metric.DriverDistributionSink
 import dev.cubxity.plugins.metrics.bukkit.bootstrap.UnifiedMetricsBukkitBootstrap
 import dev.cubxity.plugins.metrics.bukkit.metric.events.EventsCollection
 import dev.cubxity.plugins.metrics.bukkit.metric.latency.LatencyCollection
@@ -53,6 +54,12 @@ class UnifiedMetricsBukkitPlugin(
         super.registerPlatformMetrics()
 
         apiProvider.metricsManager.apply {
+            // The driver does not exist yet: enable() registers the platform
+            // metrics before it initializes the metrics manager, so a
+            // `driver as? DistributionSink` read here is always null and no
+            // histogram sample would ever reach the driver. The sink resolves
+            // the driver on each record instead.
+            val sink: DistributionSink = DriverDistributionSink(this)
             with(config.metrics.collectors) {
                 if (server) registerCollection(ServerCollection(bootstrap))
                 if (world) registerCollection(WorldCollection(bootstrap))
@@ -60,18 +67,18 @@ class UnifiedMetricsBukkitPlugin(
                 // global ServerTickEndEvent, so the single tick histogram would
                 // stay empty there; the region collection carries the tick data.
                 val regionized = BukkitPlatform.current == BukkitPlatform.Folia
-                if (tick && !regionized) registerCollection(TickCollection(bootstrap, driver as? DistributionSink))
+                if (tick && !regionized) registerCollection(TickCollection(bootstrap, sink))
                 if (events) registerCollection(EventsCollection(bootstrap))
                 if (regionizedServer && regionized) registerCollection(FoliaRegionCollection(bootstrap))
                 // The tracker collection listens for the Paper track events,
                 // which Spigot and older Paper do not have.
                 if (tracker && classExists("io.papermc.paper.event.player.PlayerTrackEntityEvent")) {
-                    registerCollection(TrackerCollection(bootstrap, driver as? DistributionSink))
+                    registerCollection(TrackerCollection(bootstrap, sink))
                 }
                 // Player ping on every platform; tick durations on Paper only,
                 // which the collection decides for itself.
                 if (latency) {
-                    registerCollection(LatencyCollection(bootstrap, driver as? DistributionSink, latencyConnection))
+                    registerCollection(LatencyCollection(bootstrap, sink, latencyConnection))
                 }
             }
         }

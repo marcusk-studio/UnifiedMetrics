@@ -71,7 +71,7 @@ class RegioniserAccess(private val logger: Logger, private val platformName: Str
         } catch (_: NoSuchFieldException) {
             missing = true
             logger.warn(
-                "This server reports Folia (io.papermc.paper.threadedregions.RegionizedServer is present), " +
+                "This server reports Folia (io.papermc.paper.threadedregions.ThreadedRegionizer is present), " +
                     "but ${handle.javaClass.name} has no '$FIELD_NAME' field on $platformName. " +
                     "It is not a Folia region server, so the regionizedServer collection reports nothing. " +
                     "Set metrics.collectors.regionizedServer to false to remove this warning."
