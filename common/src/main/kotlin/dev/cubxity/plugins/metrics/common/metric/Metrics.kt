@@ -67,4 +67,21 @@ object Metrics {
         const val RegionPlayersCount = "minecraft_regionized_region_players_count"
         const val RegionChunksCount = "minecraft_regionized_region_chunks_count"
     }
+
+    /**
+     * Server side latency: the numbers that move when a player feels the
+     * server lag. A 500 player load test on ShreddedPaper held TPS at 20.0
+     * while single ticks reached 333 ms and the keepalive ping went from 2 ms
+     * to a 140 ms median, so an average hides the condition and only a
+     * distribution and a max show it. Milliseconds and bytes, not seconds.
+     */
+    object Latency {
+        const val PlayerPingMs = "minecraft_player_ping_ms"
+        const val PlayerPingMsMax = "minecraft_player_ping_ms_max"
+        const val TickDurationMs = "minecraft_tick_duration_ms"
+        const val TickDurationMsMax = "minecraft_tick_duration_ms_max"
+        const val TickDurationSamplesDropped = "minecraft_tick_duration_samples_dropped_total"
+        const val ConnectionPendingBytes = "minecraft_connection_pending_bytes"
+        const val ConnectionPendingBytesMax = "minecraft_connection_pending_bytes_max"
+    }
 }

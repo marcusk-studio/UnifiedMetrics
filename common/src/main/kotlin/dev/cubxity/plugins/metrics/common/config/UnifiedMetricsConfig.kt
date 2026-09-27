@@ -59,7 +59,23 @@ data class UnifiedMetricsCollectorsConfig(
      * Paper builds the event object only while a plugin listens, so this toggle
      * decides that cost. Each event then costs one hash lookup and one CAS here.
      */
-    val tracker: Boolean = true
+    val tracker: Boolean = true,
+    /**
+     * Player ping and per tick duration as distributions with their maxima.
+     * The ping walk reads one volatile int per online player on the collection
+     * thread; the tick path stores one double per tick into a ring and nothing
+     * else. Tick duration needs Paper's tick event, so Folia and Spigot get
+     * the ping metrics only.
+     */
+    val latency: Boolean = true,
+    /**
+     * Adds the netty outbound backlog per connection to the latency collector.
+     * Off by default: it reads `CraftPlayer.getHandle().connection.connection
+     * .channel` through reflection, which Paper 1.20.5 and later expose under
+     * those (Mojang) names and Spigot does not. A rename turns it off with one
+     * warning at startup; the ping and tick metrics do not depend on it.
+     */
+    val latencyConnection: Boolean = false
 )
 
 @Serializable

@@ -21,6 +21,7 @@ import dev.cubxity.plugins.metrics.api.UnifiedMetrics
 import dev.cubxity.plugins.metrics.api.metric.DistributionSink
 import dev.cubxity.plugins.metrics.bukkit.bootstrap.UnifiedMetricsBukkitBootstrap
 import dev.cubxity.plugins.metrics.bukkit.metric.events.EventsCollection
+import dev.cubxity.plugins.metrics.bukkit.metric.latency.LatencyCollection
 import dev.cubxity.plugins.metrics.bukkit.metric.regionized.FoliaRegionCollection
 import dev.cubxity.plugins.metrics.bukkit.metric.server.ServerCollection
 import dev.cubxity.plugins.metrics.bukkit.metric.tick.TickCollection
@@ -66,6 +67,11 @@ class UnifiedMetricsBukkitPlugin(
                 // which Spigot and older Paper do not have.
                 if (tracker && classExists("io.papermc.paper.event.player.PlayerTrackEntityEvent")) {
                     registerCollection(TrackerCollection(bootstrap, driver as? DistributionSink))
+                }
+                // Player ping on every platform; tick durations on Paper only,
+                // which the collection decides for itself.
+                if (latency) {
+                    registerCollection(LatencyCollection(bootstrap, driver as? DistributionSink, latencyConnection))
                 }
             }
         }
