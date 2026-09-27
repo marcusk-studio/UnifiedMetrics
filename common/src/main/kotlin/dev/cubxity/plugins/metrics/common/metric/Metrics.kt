@@ -37,6 +37,26 @@ object Metrics {
     }
 
     /**
+     * Entity tracker pairs: which players receive updates about which entity.
+     * A rank based cap on the trackers of one entity (ShreddedPaper's
+     * `maximum-trackers-per-entity`) rebuilds that set on a fixed period, so the
+     * players near the rank boundary lose the pair and get it again. The client
+     * then drops the entity and adds it at its new position, which looks like a
+     * jump. Tick duration stays flat through it, so these are the only server
+     * side signal of the condition.
+     */
+    object Tracker {
+        const val PairingsAdded = "minecraft_tracker_pairings_added_total"
+        const val PairingsRemoved = "minecraft_tracker_pairings_removed_total"
+        const val PairingsLive = "minecraft_tracker_pairings_live"
+        const val TrackedEntities = "minecraft_tracker_tracked_entities"
+        const val TrackersPerEntity = "minecraft_tracker_trackers_per_entity"
+        const val TrackersPerEntityMax = "minecraft_tracker_trackers_per_entity_max"
+        const val CapBindingEntities = "minecraft_tracker_cap_binding_entities"
+        const val Cap = "minecraft_tracker_cap"
+    }
+
+    /**
      * Folia and its forks tick each region on its own thread, so the single
      * server tick has no meaning there and these replace it.
      */

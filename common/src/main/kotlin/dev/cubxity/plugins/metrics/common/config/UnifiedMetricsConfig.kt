@@ -49,7 +49,17 @@ data class UnifiedMetricsCollectorsConfig(
     val tick: Boolean = true,
     val events: Boolean = true,
     // Per-region metrics on Folia and its forks; ignored on other servers.
-    val regionizedServer: Boolean = true
+    val regionizedServer: Boolean = true,
+    /**
+     * Entity tracker pairs and their churn. Needs the Paper track events,
+     * present in paper-api 1.20.2 and later, so Spigot and older Paper skip it.
+     *
+     * The events fire once per pair the server makes or breaks, which is often:
+     * a crowd of several hundred players makes tens of thousands per second.
+     * Paper builds the event object only while a plugin listens, so this toggle
+     * decides that cost. Each event then costs one hash lookup and one CAS here.
+     */
+    val tracker: Boolean = true
 )
 
 @Serializable
