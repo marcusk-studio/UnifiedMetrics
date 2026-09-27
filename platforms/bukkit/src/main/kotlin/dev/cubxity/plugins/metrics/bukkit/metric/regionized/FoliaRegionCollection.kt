@@ -19,13 +19,16 @@ package dev.cubxity.plugins.metrics.bukkit.metric.regionized
 
 import dev.cubxity.plugins.metrics.api.metric.collector.Collector
 import dev.cubxity.plugins.metrics.api.metric.collector.CollectorCollection
+import dev.cubxity.plugins.metrics.bukkit.bootstrap.UnifiedMetricsBukkitBootstrap
 
 /**
  * Per-region metrics for Folia and its forks. Replaces the single global tick
  * collection, which has no meaning on a regionized server.
  */
-class FoliaRegionCollection : CollectorCollection {
-    override val collectors: List<Collector> = listOf(FoliaRegionCollector())
+class FoliaRegionCollection(bootstrap: UnifiedMetricsBukkitBootstrap) : CollectorCollection {
+    override val collectors: List<Collector> = listOf(
+        FoliaRegionCollector(bootstrap.logger, "${bootstrap.server.name} ${bootstrap.server.version}")
+    )
 
     // The regioniser's computeForAllRegions takes its own lock, so this can
     // run off the global region thread, and it must: collecting on the global
