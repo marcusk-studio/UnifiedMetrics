@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/marcusk-studio/UnifiedMetrics/compare/v0.6.1...v0.7.0) (2026-09-27)
+
+
+### Features
+
+* **bukkit:** support Folia and its forks ([#22](https://github.com/marcusk-studio/UnifiedMetrics/issues/22)) ([9c97bdf](https://github.com/marcusk-studio/UnifiedMetrics/commit/9c97bdfebf4db2faa306bc2da4662ecb3b804a24))
+
 ## [0.6.1](https://github.com/marcusk-studio/UnifiedMetrics/compare/v0.6.0...v0.6.1) (2026-05-12)
 
 
