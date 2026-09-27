@@ -36,4 +36,15 @@ object Metrics {
         const val WorldLoadedChunks = "minecraft_world_loaded_chunks"
     }
 
+    /**
+     * Folia and its forks tick each region on its own thread, so the single
+     * server tick has no meaning there and these replace it.
+     */
+    object RegionizedServer {
+        const val RegionCount = "minecraft_regionized_region_count"
+        const val RegionTick = "minecraft_regionized_region_tick_total"
+        const val RegionEntitiesCount = "minecraft_regionized_region_entities_count"
+        const val RegionPlayersCount = "minecraft_regionized_region_players_count"
+        const val RegionChunksCount = "minecraft_regionized_region_chunks_count"
+    }
 }

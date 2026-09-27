@@ -47,7 +47,9 @@ data class UnifiedMetricsCollectorsConfig(
     val server: Boolean = true,
     val world: Boolean = true,
     val tick: Boolean = true,
-    val events: Boolean = true
+    val events: Boolean = true,
+    // Per-region metrics on Folia and its forks; ignored on other servers.
+    val regionizedServer: Boolean = true
 )
 
 @Serializable

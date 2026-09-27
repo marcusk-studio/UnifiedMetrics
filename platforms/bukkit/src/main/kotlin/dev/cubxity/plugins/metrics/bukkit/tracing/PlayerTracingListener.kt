@@ -21,6 +21,7 @@ import dev.cubxity.plugins.metrics.api.tracing.Span
 import dev.cubxity.plugins.metrics.api.tracing.Tracer
 import dev.cubxity.plugins.metrics.api.tracing.TracingChannels
 import dev.cubxity.plugins.metrics.bukkit.UnifiedMetricsBukkitPlugin
+import dev.cubxity.plugins.metrics.bukkit.util.BukkitPlatform
 import dev.cubxity.plugins.metrics.common.config.UnifiedMetricsTracingConfig
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
@@ -52,6 +53,19 @@ class PlayerTracingListener(
 
     private val tracer: Tracer
         get() = plugin.apiProvider.tracingManager.tracer
+
+    /**
+     * Schedules [block] after [delayTicks]. Folia has no BukkitScheduler (it
+     * throws UnsupportedOperationException), so the global region scheduler
+     * carries the delay there; the span work inside does not touch any world.
+     */
+    private fun runLater(delayTicks: Long, block: () -> Unit) {
+        if (BukkitPlatform.current == BukkitPlatform.Folia) {
+            server.globalRegionScheduler.runDelayed(bootstrap, { block() }, delayTicks)
+        } else {
+            server.scheduler.runTaskLater(bootstrap, Runnable { block() }, delayTicks)
+        }
+    }
 
     fun register() {
         val messenger = server.messenger
@@ -96,14 +110,14 @@ class PlayerTracingListener(
                 // Timeout: if the player never moves within 30 seconds, end the
                 // span so it does not leak. This covers AFK joins or unusual
                 // client states.
-                server.scheduler.runTaskLater(bootstrap, Runnable {
+                runLater(600L) { // 30 seconds = 600 ticks
                     safe {
                         activeWorldReadySpans.remove(player.uniqueId)?.let { state ->
                             state.span.setAttribute("world_ready.timeout", true)
                             state.span.end()
                         }
                     }
-                }, 600L) // 30 seconds = 600 ticks
+                }
             }
         }
     }
