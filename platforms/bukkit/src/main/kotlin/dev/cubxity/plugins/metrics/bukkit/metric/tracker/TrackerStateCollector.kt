@@ -33,7 +33,8 @@ import java.util.concurrent.atomic.AtomicInteger
  *
  * The walk uses the weakly consistent [ConcurrentHashMap] iterator, so region
  * threads keep writing through it and it never throws. An entry at zero is a
- * pair that ended, and the walk removes it.
+ * pair that ended, and the walk removes it, but only after it claims the counter with
+ * [TRACKER_TOMBSTONE], because an increment can land while the walk is deciding.
  *
  * An entity is "cap binding" when its tracker count reaches the configured cap.
  * The server keeps the nearest N players, so a count equal to the cap means the
@@ -55,9 +56,18 @@ class TrackerStateCollector(
 
         val iterator = trackers.entries.iterator()
         while (iterator.hasNext()) {
-            val count = iterator.next().value.get()
+            val counter = iterator.next().value
+            val count = counter.get()
             if (count <= 0) {
-                iterator.remove()
+                // Claim the counter before removing the entry. The hot path reaches
+                // this same AtomicInteger through the map and increments it without
+                // holding any bin lock, so "read zero, then remove" can delete a pair
+                // that was created between the two steps, and that pair is then lost
+                // for good: the next track event builds a fresh counter from zero.
+                //
+                // If the CAS fails, an increment beat us to it. Leave the entry alone
+                // and let the next collection count it.
+                if (counter.compareAndSet(count, TRACKER_TOMBSTONE)) iterator.remove()
                 continue
             }
 

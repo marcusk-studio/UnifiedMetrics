@@ -36,6 +36,21 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.Function
 
 /**
+ * The value the state collector writes into a counter to claim it for removal.
+ *
+ * The hot path increments an `AtomicInteger` that it reached through the map, and it
+ * holds no map lock while doing so, so a plain "read zero, then remove" prune can
+ * delete an entry whose pair was created in between. The collector therefore claims a
+ * counter with `compareAndSet(0, TRACKER_TOMBSTONE)` and only removes it when that
+ * succeeds. Any increment that lands on a claimed counter stays negative, which tells
+ * the hot path that the counter it holds has left the map.
+ *
+ * Half of MIN_VALUE, so a burst of increments on a claimed counter cannot overflow
+ * back into positive numbers and look live again.
+ */
+internal const val TRACKER_TOMBSTONE: Int = Int.MIN_VALUE / 2
+
+/**
  * The buckets count players, not seconds, so the histogram cannot use the
  * default latency buckets. The bounds bracket the tracker caps that
  * ShreddedPaper ships with (128 and 500).
@@ -96,7 +111,11 @@ class TrackerCollection(
         distributionSink = distributionSink
     )
 
-    /** Live tracker count per entity. An entry exists while the count is above zero. */
+    /**
+     * Live tracker count per entity. An entry lives while its count is above zero; the
+     * state collector claims and removes an entry that has reached zero. See
+     * [TRACKER_TOMBSTONE] for why claiming is not the same as removing.
+     */
     private val trackers = ConcurrentHashMap<Entity, AtomicInteger>()
 
     /**
@@ -141,15 +160,33 @@ class TrackerCollection(
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     fun onTrack(event: PlayerTrackEntityEvent) {
         pairingsAdded.inc()
-        trackers.computeIfAbsent(event.entity, newCounter).incrementAndGet()
+        val entity = event.entity
+        // The increment does NOT hold the map's bin lock, so the collector can
+        // decide to prune this counter at the same moment. It claims a counter by
+        // setting it to TRACKER_TOMBSTONE first, which turns any increment we land
+        // on it negative. That is the signal that the counter we hold is no longer
+        // the one in the map: drop it and take a fresh one.
+        //
+        // An earlier revision asserted the two could not race because the hot path
+        // never removes. That was wrong. Removal is not the conflict; the conflict
+        // is an increment landing between the collector reading zero and removing.
+        while (true) {
+            val counter = trackers.computeIfAbsent(entity, newCounter)
+            if (counter.incrementAndGet() > 0) return
+            trackers.remove(entity, counter)
+        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     fun onUntrack(event: PlayerUntrackEntityEvent) {
+        // No `ignoreCancelled` here, and it is not an oversight. Of this pair only
+        // PlayerTrackEntityEvent implements Cancellable; the untrack event does not,
+        // on the compiled API and on Paper upstream today, so the flag would be dead
+        // config that implies a property the event does not have.
         pairingsRemoved.inc()
-        // Absent means the pair was made before this listener existed. The
-        // collector prunes the entry once the count reaches zero; the hot path
-        // never removes, so it cannot race the prune.
+        // Absent means the pair was made before this listener existed, so there is
+        // nothing to decrement. A tombstoned counter goes further negative, which is
+        // harmless: the entry is already out of the map, or about to leave it.
         trackers[event.entity]?.decrementAndGet()
     }
 }
