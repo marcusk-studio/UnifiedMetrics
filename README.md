@@ -56,6 +56,8 @@ Read the [wiki](https://docs.cubxity.dev/docs/unifiedmetrics/intro) for instruct
 | world         | World entities, players, and chunks count       | Bukkit, Minestom | true    |
 | tracker       | Entity tracker pairs, their churn, and cap binding | Bukkit (Paper)   | true    |
 | regionizedServer | Per-region tick, entities, players, and chunks count | Bukkit (Folia) | true |
+| latency       | Player ping and tick duration distributions with their maxima | Bukkit (tick: Paper) | true |
+| latencyConnection | Netty outbound backlog per connection, via reflection | Bukkit (Paper 1.20.5+) | false |
 
 </details>
 
