@@ -19,7 +19,9 @@ package dev.cubxity.plugins.metrics.bukkit.bootstrap
 
 import dev.cubxity.plugins.metrics.api.platform.PlatformType
 import dev.cubxity.plugins.metrics.bukkit.BukkitDispatcher
+import dev.cubxity.plugins.metrics.bukkit.FoliaGlobalDispatcher
 import dev.cubxity.plugins.metrics.bukkit.UnifiedMetricsBukkitPlugin
+import dev.cubxity.plugins.metrics.bukkit.util.BukkitPlatform
 import dev.cubxity.plugins.metrics.common.UnifiedMetricsBootstrap
 import dev.cubxity.plugins.metrics.common.plugin.logger.JavaLogger
 import kotlinx.coroutines.CoroutineDispatcher
@@ -47,9 +49,15 @@ class UnifiedMetricsBukkitBootstrap : JavaPlugin(), UnifiedMetricsBootstrap {
 
     override val logger = JavaLogger(getLogger())
 
-    override val dispatcher: CoroutineDispatcher = BukkitDispatcher(this)
+    // Folia has no main thread and its BukkitScheduler throws, so the global
+    // region scheduler stands in for it there.
+    override val dispatcher: CoroutineDispatcher = when (BukkitPlatform.current) {
+        BukkitPlatform.Folia -> FoliaGlobalDispatcher(this)
+        else -> BukkitDispatcher(this)
+    }
 
     override fun onEnable() {
+        logger.info("Detected Bukkit platform: ${BukkitPlatform.current}")
         plugin.enable()
     }
 

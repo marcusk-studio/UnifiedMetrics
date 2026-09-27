@@ -15,27 +15,21 @@
  *     along with UnifiedMetrics.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package dev.cubxity.plugins.metrics.bukkit.util
+package dev.cubxity.plugins.metrics.bukkit.metric.regionized
 
-enum class BukkitPlatform {
-    Bukkit,
-    Paper,
+import dev.cubxity.plugins.metrics.api.metric.collector.Collector
+import dev.cubxity.plugins.metrics.api.metric.collector.CollectorCollection
 
-    /**
-     * Folia and its forks (Canvas, ...): a regionized server with no single
-     * main thread. `Bukkit.getScheduler()` throws on these servers, and the
-     * global tick events never fire, so the plugin uses the global region
-     * scheduler and collects per-region tick data instead.
-     */
-    Folia;
+/**
+ * Per-region metrics for Folia and its forks. Replaces the single global tick
+ * collection, which has no meaning on a regionized server.
+ */
+class FoliaRegionCollection : CollectorCollection {
+    override val collectors: List<Collector> = listOf(FoliaRegionCollector())
 
-    companion object {
-        val current: BukkitPlatform by lazy {
-            when {
-                classExists("io.papermc.paper.threadedregions.RegionizedServer") -> Folia
-                classExists("com.destroystokyo.paper.event.server.ServerTickStartEvent") -> Paper
-                else -> Bukkit
-            }
-        }
-    }
+    // The regioniser's computeForAllRegions takes its own lock, so this can
+    // run off the global region thread, and it must: collecting on the global
+    // region would add the walk to that region's tick.
+    override val isAsync: Boolean
+        get() = true
 }

@@ -21,10 +21,12 @@ import dev.cubxity.plugins.metrics.api.UnifiedMetrics
 import dev.cubxity.plugins.metrics.api.metric.DistributionSink
 import dev.cubxity.plugins.metrics.bukkit.bootstrap.UnifiedMetricsBukkitBootstrap
 import dev.cubxity.plugins.metrics.bukkit.metric.events.EventsCollection
+import dev.cubxity.plugins.metrics.bukkit.metric.regionized.FoliaRegionCollection
 import dev.cubxity.plugins.metrics.bukkit.metric.server.ServerCollection
 import dev.cubxity.plugins.metrics.bukkit.metric.tick.TickCollection
 import dev.cubxity.plugins.metrics.bukkit.metric.world.WorldCollection
 import dev.cubxity.plugins.metrics.bukkit.tracing.PlayerTracingListener
+import dev.cubxity.plugins.metrics.bukkit.util.BukkitPlatform
 import dev.cubxity.plugins.metrics.core.plugin.CoreUnifiedMetricsPlugin
 import org.bukkit.plugin.ServicePriority
 import java.util.concurrent.Executors
@@ -51,8 +53,13 @@ class UnifiedMetricsBukkitPlugin(
             with(config.metrics.collectors) {
                 if (server) registerCollection(ServerCollection(bootstrap))
                 if (world) registerCollection(WorldCollection(bootstrap))
-                if (tick) registerCollection(TickCollection(bootstrap, driver as? DistributionSink))
+                // Folia ticks each region on its own thread and never fires the
+                // global ServerTickEndEvent, so the single tick histogram would
+                // stay empty there; the region collection carries the tick data.
+                val regionized = BukkitPlatform.current == BukkitPlatform.Folia
+                if (tick && !regionized) registerCollection(TickCollection(bootstrap, driver as? DistributionSink))
                 if (events) registerCollection(EventsCollection(bootstrap))
+                if (regionizedServer && regionized) registerCollection(FoliaRegionCollection())
             }
         }
     }
