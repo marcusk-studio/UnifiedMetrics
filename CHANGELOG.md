@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/marcusk-studio/UnifiedMetrics/compare/v0.8.0...v0.8.1) (2026-09-27)
+
+
+### Bug Fixes
+
+* **bukkit:** keep one failing collector from dropping every sample ([#27](https://github.com/marcusk-studio/UnifiedMetrics/issues/27)) ([6c5fa0c](https://github.com/marcusk-studio/UnifiedMetrics/commit/6c5fa0cac0695a4912583248ae77019283182c91))
+
 ## [0.8.0](https://github.com/marcusk-studio/UnifiedMetrics/compare/v0.7.0...v0.8.0) (2026-09-27)
 
 
