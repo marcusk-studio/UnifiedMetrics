@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.2](https://github.com/marcusk-studio/UnifiedMetrics/compare/v0.8.1...v0.8.2) (2026-09-27)
+
+
+### Bug Fixes
+
+* **bukkit:** detect Folia by ThreadedRegionizer, and give histograms a live distribution sink ([#29](https://github.com/marcusk-studio/UnifiedMetrics/issues/29)) ([229acda](https://github.com/marcusk-studio/UnifiedMetrics/commit/229acda6ebe08596f9bbf41fb09be544c621f312))
+
 ## [0.8.1](https://github.com/marcusk-studio/UnifiedMetrics/compare/v0.8.0...v0.8.1) (2026-09-27)
 
 
