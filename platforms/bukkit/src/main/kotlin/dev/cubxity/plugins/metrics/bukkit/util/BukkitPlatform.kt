@@ -27,18 +27,24 @@ enum class BukkitPlatform {
      * global tick events never fire, so the plugin uses the global region
      * scheduler and collects per-region tick data instead.
      *
-     * ShreddedPaper is detected as Folia too: it ships an empty
-     * `io.papermc.paper.threadedregions.RegionizedServer` so that Folia
-     * plugins use its Folia schedulers. It has no `ServerLevel.regioniser`,
-     * so code on this path must not assume Folia's internals are present;
-     * see `RegioniserAccess`.
+     * The marker is `ThreadedRegionizer`, the class that owns the regions and
+     * the one the region collector reads (`ServerLevel.regioniser`). It is
+     * not `RegionizedServer`: ShreddedPaper ships an empty copy of that class
+     * so that Folia plugins accept it, while it keeps one server thread, a
+     * working `BukkitScheduler` and Paper's global tick events (its
+     * `MinecraftServer.tickServer` fires `ServerTickEndEvent` after it joins
+     * every region tick). ShreddedPaper is therefore [Paper] here, which is
+     * what gives it tick metrics; a detection on `RegionizedServer` gave it
+     * none. Verified against shreddedpaper-1.21.11 (no
+     * `ThreadedRegionizer` class, no `regioniser` field) and against the
+     * Folia and Canvas sources, which both define the class.
      */
     Folia;
 
     companion object {
         val current: BukkitPlatform by lazy {
             when {
-                classExists("io.papermc.paper.threadedregions.RegionizedServer") -> Folia
+                classExists("io.papermc.paper.threadedregions.ThreadedRegionizer") -> Folia
                 classExists("com.destroystokyo.paper.event.server.ServerTickStartEvent") -> Paper
                 else -> Bukkit
             }
