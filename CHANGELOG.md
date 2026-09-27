@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.8.0](https://github.com/marcusk-studio/UnifiedMetrics/compare/v0.7.0...v0.8.0) (2026-09-27)
+
+
+### Features
+
+* **bukkit:** add entity tracker pair and cap binding metrics ([#24](https://github.com/marcusk-studio/UnifiedMetrics/issues/24)) ([88ac320](https://github.com/marcusk-studio/UnifiedMetrics/commit/88ac3205faf53059ea81ebbd941c24fdf2ef0e6e))
+* **bukkit:** add player ping, tick duration and backlog latency metrics ([#26](https://github.com/marcusk-studio/UnifiedMetrics/issues/26)) ([94bdb7d](https://github.com/marcusk-studio/UnifiedMetrics/commit/94bdb7d4220b8dfd2f218b6107afb45b002581dc))
+
 ## [0.7.0](https://github.com/marcusk-studio/UnifiedMetrics/compare/v0.6.1...v0.7.0) (2026-09-27)
 
 
