@@ -17,6 +17,7 @@
 
 package dev.cubxity.plugins.metrics.bukkit.metric.regionized
 
+import dev.cubxity.plugins.metrics.api.logging.Logger
 import dev.cubxity.plugins.metrics.api.metric.collector.Collector
 import dev.cubxity.plugins.metrics.api.metric.data.CounterMetric
 import dev.cubxity.plugins.metrics.api.metric.data.GaugeMetric
@@ -39,15 +40,25 @@ import java.util.function.Consumer
  *
  * These are the same members the 2023 typed implementation used against the
  * Folia dev bundle (`FoliaExt.kt` in this repository's history), and the ones
- * upstream PR #142 reads. If a future Folia renames one, the collector throws
- * and UnifiedMetrics logs the failure once per collection; it does not take
- * the server down.
+ * upstream PR #142 reads.
+ *
+ * A server can pass the Folia class check without a regioniser: ShreddedPaper
+ * ships an empty `io.papermc.paper.threadedregions.RegionizedServer` for
+ * plugin compatibility. [RegioniserAccess] finds that out on the first
+ * collection, logs it once, and this collector then returns no samples. A
+ * renamed member deeper in the shape still throws; `MetricsManager.collect()`
+ * logs that once per collector and keeps the other collectors' samples.
  */
-class FoliaRegionCollector : Collector {
+class FoliaRegionCollector(logger: Logger, platformName: String) : Collector {
+    private val access = RegioniserAccess(logger, platformName)
+
     override fun collect(): List<Metric> {
+        if (!access.isAvailable) return emptyList()
+
         val regions = ArrayList<Pair<String, Any>>()
         for (world in Bukkit.getWorlds()) {
-            computeForAllRegions(regioniser(world)) { region -> regions.add(world.name to region) }
+            val regioniser = access.regioniser(handle(world)) ?: return emptyList()
+            computeForAllRegions(regioniser) { region -> regions.add(world.name to region) }
         }
 
         val samples = ArrayList<Metric>(regions.size * 4 + 1)
@@ -66,10 +77,8 @@ class FoliaRegionCollector : Collector {
         return samples
     }
 
-    private fun regioniser(world: World): Any {
-        val handle = world.javaClass.getMethod("getHandle").invoke(world)
-        return handle.javaClass.getField("regioniser").get(handle)
-    }
+    private fun handle(world: World): Any =
+        world.javaClass.getMethod("getHandle").invoke(world)
 
     private fun computeForAllRegions(regioniser: Any, consumer: (Any) -> Unit) {
         regioniser.javaClass

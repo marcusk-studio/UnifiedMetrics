@@ -62,7 +62,7 @@ class UnifiedMetricsBukkitPlugin(
                 val regionized = BukkitPlatform.current == BukkitPlatform.Folia
                 if (tick && !regionized) registerCollection(TickCollection(bootstrap, driver as? DistributionSink))
                 if (events) registerCollection(EventsCollection(bootstrap))
-                if (regionizedServer && regionized) registerCollection(FoliaRegionCollection())
+                if (regionizedServer && regionized) registerCollection(FoliaRegionCollection(bootstrap))
                 // The tracker collection listens for the Paper track events,
                 // which Spigot and older Paper do not have.
                 if (tracker && classExists("io.papermc.paper.event.player.PlayerTrackEntityEvent")) {

@@ -23,7 +23,6 @@ import dev.cubxity.plugins.metrics.api.metric.MetricsDriver
 import dev.cubxity.plugins.metrics.api.metric.MetricsDriverFactory
 import dev.cubxity.plugins.metrics.api.metric.MetricsManager
 import dev.cubxity.plugins.metrics.api.metric.collector.CollectorCollection
-import dev.cubxity.plugins.metrics.api.metric.collector.collect
 import dev.cubxity.plugins.metrics.api.metric.data.Metric
 import dev.cubxity.plugins.metrics.api.util.fastForEach
 import dev.cubxity.plugins.metrics.common.plugin.UnifiedMetricsPlugin
@@ -38,6 +37,7 @@ class MetricsManagerImpl(private val plugin: UnifiedMetricsPlugin) : MetricsMana
 
     private val metricDrivers: MutableMap<String, MetricsDriverFactory<Any>> = HashMap()
     private val _collections: MutableList<CollectorCollection> = ArrayList()
+    private val guard = CollectorGuard(plugin.bootstrap.logger)
 
     private var shouldInitialize: Boolean = false
     private var _driver: MetricsDriver? = null
@@ -98,19 +98,19 @@ class MetricsManagerImpl(private val plugin: UnifiedMetricsPlugin) : MetricsMana
 
         if (dispatcher is CurrentThreadDispatcher) {
             collections.fastForEach { collection ->
-                list.addAll(collection.collect())
+                guard.collectInto(list, collection)
             }
         } else {
             withContext(dispatcher) {
                 collections.fastForEach { collection ->
                     if (!collection.isAsync) {
-                        list.addAll(collection.collect())
+                        guard.collectInto(list, collection)
                     }
                 }
             }
             collections.fastForEach { collection ->
                 if (collection.isAsync) {
-                    list.addAll(collection.collect())
+                    guard.collectInto(list, collection)
                 }
             }
         }

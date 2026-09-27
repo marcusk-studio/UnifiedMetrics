@@ -26,6 +26,12 @@ enum class BukkitPlatform {
      * main thread. `Bukkit.getScheduler()` throws on these servers, and the
      * global tick events never fire, so the plugin uses the global region
      * scheduler and collects per-region tick data instead.
+     *
+     * ShreddedPaper is detected as Folia too: it ships an empty
+     * `io.papermc.paper.threadedregions.RegionizedServer` so that Folia
+     * plugins use its Folia schedulers. It has no `ServerLevel.regioniser`,
+     * so code on this path must not assume Folia's internals are present;
+     * see `RegioniserAccess`.
      */
     Folia;
 
