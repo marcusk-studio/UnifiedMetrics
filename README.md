@@ -54,6 +54,8 @@ Read the [wiki](https://docs.cubxity.dev/docs/unifiedmetrics/intro) for instruct
 | server        | Plugins count and player counts                 | All              | true    |
 | tick          | Tick duration histogram                         | Bukkit, Minestom | true    |
 | world         | World entities, players, and chunks count       | Bukkit, Minestom | true    |
+| tracker       | Entity tracker pairs, their churn, and cap binding | Bukkit (Paper)   | true    |
+| regionizedServer | Per-region tick, entities, players, and chunks count | Bukkit (Folia) | true |
 
 </details>
 

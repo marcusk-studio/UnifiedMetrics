@@ -24,9 +24,11 @@ import dev.cubxity.plugins.metrics.bukkit.metric.events.EventsCollection
 import dev.cubxity.plugins.metrics.bukkit.metric.regionized.FoliaRegionCollection
 import dev.cubxity.plugins.metrics.bukkit.metric.server.ServerCollection
 import dev.cubxity.plugins.metrics.bukkit.metric.tick.TickCollection
+import dev.cubxity.plugins.metrics.bukkit.metric.tracker.TrackerCollection
 import dev.cubxity.plugins.metrics.bukkit.metric.world.WorldCollection
 import dev.cubxity.plugins.metrics.bukkit.tracing.PlayerTracingListener
 import dev.cubxity.plugins.metrics.bukkit.util.BukkitPlatform
+import dev.cubxity.plugins.metrics.bukkit.util.classExists
 import dev.cubxity.plugins.metrics.core.plugin.CoreUnifiedMetricsPlugin
 import org.bukkit.plugin.ServicePriority
 import java.util.concurrent.Executors
@@ -60,6 +62,11 @@ class UnifiedMetricsBukkitPlugin(
                 if (tick && !regionized) registerCollection(TickCollection(bootstrap, driver as? DistributionSink))
                 if (events) registerCollection(EventsCollection(bootstrap))
                 if (regionizedServer && regionized) registerCollection(FoliaRegionCollection())
+                // The tracker collection listens for the Paper track events,
+                // which Spigot and older Paper do not have.
+                if (tracker && classExists("io.papermc.paper.event.player.PlayerTrackEntityEvent")) {
+                    registerCollection(TrackerCollection(bootstrap, driver as? DistributionSink))
+                }
             }
         }
     }
